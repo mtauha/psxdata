@@ -1,0 +1,83 @@
+"""Unit tests for psxdata/parsers/html.py."""
+import logging
+
+from psxdata.parsers.html import parse_html_table
+
+
+def _make_table(headers: list[str], rows: list[list[str]]) -> str:
+    """Build a minimal HTML table string for testing."""
+    th_row = "".join(f"<th>{h}</th>" for h in headers)
+    tr_rows = "".join(
+        "<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>"
+        for row in rows
+    )
+    return f"<table><thead><tr>{th_row}</tr></thead><tbody>{tr_rows}</tbody></table>"
+
+
+class TestParseHtmlTable:
+    def test_all_expected_columns_present(self):
+        html = _make_table(
+            ["DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"],
+            [["Jan 3, 2025", "481.99", "496.00", "474.01", "485.38", "4496408"]],
+        )
+        rows = parse_html_table(html)
+        assert len(rows) == 1
+        assert rows[0]["date"] == "Jan 3, 2025"
+        assert rows[0]["open"] == "481.99"
+        assert rows[0]["close"] == "485.38"
+
+    def test_mapped_column_names(self):
+        """COLUMN_MAP entries are applied — raw headers become clean names."""
+        html = _make_table(["CHANGE (%)"], [["1.25"]])
+        rows = parse_html_table(html)
+        assert "change_pct" in rows[0]
+
+    def test_unknown_column_gets_fallback_name_and_warns(self, caplog):
+        html = _make_table(["TOTALLY_NEW_COLUMN"], [["value"]])
+        with caplog.at_level(logging.WARNING):
+            rows = parse_html_table(html)
+        assert len(rows) == 1
+        assert "totally_new_column" in rows[0]
+        assert "totally_new_column" in caplog.text or "unknown" in caplog.text.lower()
+
+    def test_missing_column_partial_mapping(self, caplog):
+        """Fewer td cells than headers — row still returned with available cells."""
+        html = _make_table(
+            ["DATE", "OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"],
+            [["Jan 3, 2025", "481.99"]],  # only 2 of 6 columns
+        )
+        with caplog.at_level(logging.WARNING):
+            rows = parse_html_table(html)
+        assert len(rows) == 1
+        assert rows[0]["date"] == "Jan 3, 2025"
+
+    def test_empty_table_returns_empty_list(self):
+        html = "<table><thead><tr><th>DATE</th></tr></thead><tbody></tbody></table>"
+        rows = parse_html_table(html)
+        assert rows == []
+
+    def test_empty_html_returns_empty_list(self, caplog):
+        with caplog.at_level(logging.WARNING):
+            rows = parse_html_table("<html></html>")
+        assert rows == []
+
+    def test_mixed_case_headers_normalized(self):
+        html = _make_table(["Symbol", "Name"], [["ENGRO", "Engro Corp"]])
+        rows = parse_html_table(html)
+        assert "symbol" in rows[0]
+        assert "name" in rows[0]
+
+    def test_headers_with_leading_trailing_spaces(self):
+        html = _make_table(["  DATE  ", "  OPEN  "], [["2024-01-01", "100"]])
+        rows = parse_html_table(html)
+        assert "date" in rows[0]
+        assert "open" in rows[0]
+
+    def test_multiple_rows(self):
+        html = _make_table(
+            ["DATE", "CLOSE"],
+            [["2024-01-01", "100"], ["2024-01-02", "101"], ["2024-01-03", "102"]],
+        )
+        rows = parse_html_table(html)
+        assert len(rows) == 3
+        assert rows[2]["close"] == "102"

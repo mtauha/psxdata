@@ -1,0 +1,84 @@
+name: Bug Report
+description: Something is broken or returning wrong output
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - SCRAPER
+        - API
+        - CACHE
+        - PARSER
+        - MODELS
+        - INFRA
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: What went wrong? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal code or commands to reproduce the issue
+      placeholder: |
+        import psxdata
+        df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
+        # what happens vs what you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+    validations:
+      required: true
+
+  - type: dropdown
+    id: endpoint
+    attributes:
+      label: PSX Endpoint Affected (if any)
+      options:
+        - Not applicable
+        - /historical
+        - /trading-panel
+        - /screener
+        - /indices
+        - /sector-summary
+        - /financial-reports
+        - /debt-market
+        - /eligible-scrips
+    validations:
+      required: false
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python Version
+      placeholder: "3.11.9"
+    validations:
+      required: true
+
+  - type: input
+    id: psxdata_version
+    attributes:
+      label: psxdata Version
+      placeholder: "0.1.0"
+    validations:
+      required: true

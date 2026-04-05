@@ -1,0 +1,48 @@
+name: Task
+description: Chore, refactor, or infrastructure work
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - SCRAPER
+        - API
+        - CACHE
+        - PARSER
+        - MODELS
+        - INFRA
+    validations:
+      required: true
+
+  - type: dropdown
+    id: task_type
+    attributes:
+      label: Task Type
+      options:
+        - Refactor
+        - Chore
+        - Infrastructure
+        - Performance
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Task Description
+      description: What needs to be done and why?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How will you know this task is done?
+      placeholder: |
+        - [ ] ruff reports no errors on psxdata/
+        - [ ] mypy reports no errors on psxdata/
+        - [ ] All unit tests pass
+    validations:
+      required: true

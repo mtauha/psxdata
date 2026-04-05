@@ -1,0 +1,32 @@
+name: Integration Tests
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+          playwright install chromium
+
+      - name: Run integration tests
+        run: |
+          if [ -d tests/integration ]; then
+            pytest -m integration -v --tb=short --timeout=60
+          else
+            echo "tests/integration/ not yet created — no integration tests to run"
+          fi

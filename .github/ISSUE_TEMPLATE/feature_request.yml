@@ -1,0 +1,59 @@
+name: Feature Request
+description: Propose a new capability or improvement
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - SCRAPER
+        - API
+        - CACHE
+        - PARSER
+        - MODELS
+        - INFRA
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: What do you want to add or change?
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case
+      description: Why is this needed? Who benefits?
+    validations:
+      required: true
+
+  - type: textarea
+    id: api_design
+    attributes:
+      label: Proposed API Design
+      description: Optional — sketch the interface you have in mind
+      placeholder: |
+        # e.g.
+        df = psxdata.stocks("ENGRO", adjusted=True)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Phase
+      options:
+        - Phase 2 — Core Engineering
+        - Phase 3 — Scrapers
+        - Phase 3 API — Public Python API
+        - Phase 4 — FastAPI Layer
+        - Phase 5 — Full Test Suite
+        - Phase 6 — Packaging & CI/CD
+        - Phase 7 — Documentation
+    validations:
+      required: true

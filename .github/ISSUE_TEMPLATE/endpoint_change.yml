@@ -1,0 +1,51 @@
+name: PSX Endpoint Change
+description: PSX changed an endpoint format, response structure, or behavior
+labels: ["endpoint:changed"]
+body:
+  - type: dropdown
+    id: endpoint
+    attributes:
+      label: Affected Endpoint
+      options:
+        - /historical
+        - /trading-panel
+        - /screener
+        - /indices
+        - /sector-summary
+        - /financial-reports
+        - /debt-market
+        - /eligible-scrips
+    validations:
+      required: true
+
+  - type: textarea
+    id: what_changed
+    attributes:
+      label: What Changed
+      description: Describe the change — new columns, removed columns, new date format, new URL, etc.
+    validations:
+      required: true
+
+  - type: input
+    id: date_noticed
+    attributes:
+      label: Date First Noticed
+      placeholder: "2024-03-15"
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Which scrapers or parsers are broken? What data is missing or wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: fix
+    attributes:
+      label: Suggested Fix
+      description: Optional — if you know what needs to change in the code
+    validations:
+      required: false

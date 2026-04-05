@@ -1,44 +1,31 @@
 # psxdata
 
 [![CI](https://github.com/mtauha/psxdata/actions/workflows/ci.yml/badge.svg)](https://github.com/mtauha/psxdata/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/psxdata)](https://pypi.org/project/psxdata/)
-[![Python](https://img.shields.io/pypi/pyversions/psxdata)](https://pypi.org/project/psxdata/)
+![PyPI](https://img.shields.io/badge/pypi-not%20yet%20published-lightgrey)
+![Status](https://img.shields.io/badge/status-in%20development-orange)
 
-**Python library and REST API for Pakistan Stock Exchange (PSX) data.**
+> **⚠ This package is under active development and is not yet usable.**
+> No PyPI release exists. The library, scrapers, and REST API are being built in phases — see the [development roadmap](https://github.com/mtauha/psxdata/issues/4) for current status.
 
-Fetch historical OHLCV data, real-time quotes, sector aggregates, and financial reports from PSX — with automatic caching, retry logic, and a clean pandas DataFrame interface.
+**Python library and REST API for Pakistan Stock Exchange (PSX) data** — being built from scratch to be resilient to PSX's frequent HTML changes.
 
 ---
 
 ## Why psxdata
 
-The existing [`psx-data-reader`](https://github.com/FarhanZizvi/psx-data-reader) library hardcodes date formats and column positions that break silently when PSX changes its HTML. `psxdata` was built from scratch to be resilient: dynamic column extraction from `<th>` tags, multi-format date parsing with fuzzy fallback, exponential backoff retries, and a disk cache that keeps historical data forever.
+The existing [`psx-data-reader`](https://github.com/FarhanZizvi/psx-data-reader) library hardcodes date formats and column positions that break silently when PSX changes its HTML. `psxdata` is designed differently: dynamic column extraction from `<th>` tags, multi-format date parsing with fuzzy fallback, exponential backoff retries, and a disk cache that keeps historical data forever.
 
 ---
 
-## Installation
+## Planned API
 
-```bash
-pip install psxdata           # Python library only
-pip install psxdata[api]      # Library + FastAPI REST server
-```
-
-Playwright (for JS-rendered PSX endpoints) is installed automatically. You also need the Chromium browser:
-
-```bash
-playwright install chromium
-```
-
----
-
-## Quick Start
+> These signatures are the target interface. They do not work yet — implementation starts in Phase 2.
 
 ```python
 import psxdata
 
 # Historical OHLCV data for ENGRO
 df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
-print(df.head())
 
 # All listed tickers
 tickers = psxdata.tickers()
@@ -49,12 +36,6 @@ kse100 = psxdata.tickers(index="KSE-100")
 # Current index values
 indices = psxdata.indices()
 ```
-
----
-
-## API Reference
-
-> Full reference coming in Phase 7. Signatures are stable from Phase 3 onward.
 
 | Function | Description |
 |---|---|
@@ -68,13 +49,9 @@ indices = psxdata.indices()
 
 ---
 
-## REST API
+## Planned REST API
 
-Run the server:
-
-```bash
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-```
+> The FastAPI layer is planned for Phase 4 and does not exist yet.
 
 | Endpoint | Description |
 |---|---|
@@ -88,29 +65,32 @@ uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
 | `GET /debt-market` | Debt instruments |
 | `GET /eligible-scrips` | Margin eligible stocks |
 
-All responses: `{"data": ..., "meta": {"timestamp": "...", "cached": true}}`
-
-Swagger UI: `http://localhost:8000/docs` · ReDoc: `http://localhost:8000/redoc`
-
-Rate limit: 60 requests/min per IP.
+All responses will follow: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}`
 
 ---
 
-## Known Limitations
+## Development Status
 
-- PSX can change HTML structure at any time. If a scraper breaks, open an [Endpoint Change issue](.github/ISSUE_TEMPLATE/endpoint_change.yml).
-- `/sector-summary` and `/financial-reports` require Playwright (headless Chromium). This adds ~2s cold-start on first use.
-- `/financial-reports` returned an empty table during Phase 0 testing. The parser handles it gracefully but no financial report data may be available.
-- No real-time guaranteed — PSX does not publish a streaming feed. Quotes are scraped on demand and cached for 15 minutes.
+See the [roadmap issue](https://github.com/mtauha/psxdata/issues/4) for the full phase breakdown. Current state:
+
+- ✅ Phase 0 — PSX endpoint research and HTML fixture capture
+- ✅ Phase 0.5 — Repository setup, CI/CD, community files
+- 🔲 Phase 2 — Core engineering (BaseScraper, parsers, cache, utils)
+- 🔲 Phase 3 — Scrapers
+- 🔲 Phase 3 API — Public Python package interface
+- 🔲 Phase 4 — FastAPI REST layer
+- 🔲 Phase 5 — Full test suite
+- 🔲 Phase 6 — Packaging & PyPI publish
+- 🔲 Phase 7 — Documentation
 
 ---
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Open an issue before starting non-trivial work.
+Contributions are welcome once Phase 2 is underway. See [CONTRIBUTING.md](CONTRIBUTING.md) and open an issue before starting non-trivial work.
 
 ---
 
 ## Architecture
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full component diagram, data flow, and design decisions.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the component diagram, data flow, and design decisions.

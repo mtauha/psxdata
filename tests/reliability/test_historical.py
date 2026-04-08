@@ -77,6 +77,7 @@ class TestHistoricalScraper:
             df = scraper.fetch("ENGRO")
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 0
+        assert "is_anomaly" in df.columns
 
     def test_is_anomaly_column_present(self):
         """validate_ohlc_dataframe() adds is_anomaly column."""

@@ -60,7 +60,7 @@ class HistoricalScraper(BaseScraper):
 
         if not rows:
             logger.warning("No historical data returned for %s", symbol)
-            return pd.DataFrame(columns=["date", "open", "high", "low", "close", "volume"])
+            return pd.DataFrame(columns=["date", "open", "high", "low", "close", "volume", "is_anomaly"])
 
         df = pd.DataFrame(rows)
         logger.debug("Parsed %d raw rows for %s", len(df), symbol)

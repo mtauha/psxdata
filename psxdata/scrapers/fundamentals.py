@@ -40,7 +40,7 @@ class FundamentalsScraper(BaseScraper):
         rows = parse_html_table(resp.text)
 
         if not rows:
-            logger.warning("Financial reports list returned no data (may be outside reporting season)")
+            logger.info("Financial reports list returned no data (may be outside reporting season)")
             return pd.DataFrame()
 
         df = pd.DataFrame(rows)

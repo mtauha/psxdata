@@ -42,3 +42,16 @@ class TestSymbolsScraper:
             df = scraper.fetch()
         assert isinstance(df, pd.DataFrame)
         assert len(df) == 0
+
+    def test_missing_boolean_flags_filled_as_false(self):
+        """PSX omits isGEM/isETF/isDebt keys for instruments where flag is False."""
+        # Create records: some with isGEM, some without
+        records_without = [{"symbol": "X", "name": "X Corp", "sectorName": "Tech", "isETF": False, "isDebt": False}]
+        records_with = [{"symbol": "Y", "name": "Y Corp", "sectorName": "Tech", "isETF": False, "isDebt": False, "isGEM": True}]
+        mixed = records_without + records_with
+        scraper = SymbolsScraper()
+        with patch.object(scraper._session, "request", return_value=_mock_json_response(mixed)):
+            df = scraper.fetch()
+        assert df["is_gem"].isna().sum() == 0
+        assert df.loc[df["symbol"] == "X", "is_gem"].iloc[0] == False
+        assert df.loc[df["symbol"] == "Y", "is_gem"].iloc[0] == True

@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
-"""
-PSX endpoint diagnostic tool.
-
-Probes all 8 dps.psx.com.pk endpoints and writes docs/PSX_ENDPOINTS.md.
+"""Probe all PSX AJAX endpoints — schema extraction, diffing, and report generation.
 
 Usage:
-    python tools/probe_endpoints.py                        # probe all endpoints
+    python tools/probe_endpoints.py                  # probe all, write PSX_ENDPOINTS.md
+    python tools/probe_endpoints.py --save-baseline  # save schema to endpoint_schema.json
+    python tools/probe_endpoints.py --diff           # compare live vs baseline, exit 1 on drift
     python tools/probe_endpoints.py --endpoint historical  # probe one endpoint
-    python tools/probe_endpoints.py --no-playwright        # skip JS endpoints
 """
 
 import argparse
+import json
 import sys
 import time
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
-from playwright.sync_api import sync_playwright
 
 DOCS_DIR = Path(__file__).parent.parent / "docs"
+FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "fixtures"
+BASELINE_PATH = FIXTURES_DIR / "endpoint_schema.json"
 
 BASE_URL = "https://dps.psx.com.pk"
 
@@ -36,296 +36,169 @@ HEADERS = {
     "X-Requested-With": "XMLHttpRequest",
 }
 
-END_DATE = date.today()
-START_DATE = END_DATE - timedelta(days=30)
+
+def _session() -> requests.Session:
+    s = requests.Session()
+    s.headers.update(HEADERS)
+    return s
 
 
-def has_table(html: str) -> bool:
-    """Return True if the HTML contains a rendered data table."""
-    return "<table" in html.lower() or "<tbody" in html.lower()
+ENDPOINTS = [
+    {"name": "historical", "url": "/historical", "method": "POST",
+     "data": {"symbol": "ENGRO"}, "response_type": "html"},
+    {"name": "screener", "url": "/screener", "method": "GET",
+     "data": None, "response_type": "html"},
+    {"name": "trading_panel", "url": "/trading-panel", "method": "GET",
+     "data": None, "response_type": "html"},
+    {"name": "debt_market", "url": "/debt-market", "method": "GET",
+     "data": None, "response_type": "html"},
+    {"name": "eligible_scrips", "url": "/eligible-scrips", "method": "GET",
+     "data": None, "response_type": "html"},
+    # AJAX endpoints
+    {"name": "trading_board_reg_main", "url": "/trading-board/REG/main",
+     "method": "GET", "data": None, "response_type": "html"},
+    {"name": "trading_board_reg_gem", "url": "/trading-board/REG/gem",
+     "method": "GET", "data": None, "response_type": "html"},
+    {"name": "trading_board_bnb_bnb", "url": "/trading-board/BNB/bnb",
+     "method": "GET", "data": None, "response_type": "html"},
+    {"name": "symbols", "url": "/symbols", "method": "GET",
+     "data": None, "response_type": "json"},
+    {"name": "sector_summary", "url": "/sector-summary/sectorwise",
+     "method": "GET", "data": None, "response_type": "html"},
+    {"name": "financial_reports", "url": "/financial-reports-list",
+     "method": "GET", "data": None, "response_type": "html"},
+    {"name": "indices_kse100", "url": "/indices/KSE100", "method": "GET",
+     "data": None, "response_type": "html"},
+    {"name": "indices_allshr", "url": "/indices/ALLSHR", "method": "GET",
+     "data": None, "response_type": "html"},
+]
 
 
-def extract_columns(html: str) -> list[str]:
-    """Extract column names from the first <th> tags found."""
-    soup = BeautifulSoup(html, "lxml")
-    headers = [th.get_text(strip=True) for th in soup.find_all("th")]
-    return headers if headers else []
-
-
-def extract_sample_row(html: str) -> list[str]:
-    """Extract the first data row from the first table found."""
-    soup = BeautifulSoup(html, "lxml")
-    table = soup.find("table")
-    if not table:
-        return []
-    rows = table.find_all("tr")
-    for row in rows:
-        cells = [td.get_text(strip=True) for td in row.find_all("td")]
-        if cells:
-            return cells
-    return []
-
-
-def probe_with_requests(url: str, method: str = "GET", data: dict | None = None) -> dict:
-    """
-    Probe a single endpoint using requests.
-
-    Returns a dict with: status_code, content_type, size_bytes, html,
-    response_headers, has_table, columns, sample_row, error.
-    """
-    result = {
-        "status_code": None,
-        "content_type": None,
-        "size_bytes": 0,
-        "html": "",
-        "response_headers": {},
-        "has_table": False,
-        "columns": [],
-        "sample_row": [],
-        "error": None,
-    }
+def probe_endpoint(ep: dict, session: requests.Session) -> dict:
+    """Probe one endpoint and return schema info."""
+    url = f"{BASE_URL}{ep['url']}"
+    t0 = time.monotonic()
     try:
-        session = requests.Session()
-        session.headers.update(HEADERS)
-        if method == "POST":
-            resp = session.post(url, data=data, timeout=30)
+        if ep["method"] == "POST":
+            resp = session.post(url, data=ep["data"], timeout=30)
         else:
             resp = session.get(url, timeout=30)
-        result["status_code"] = resp.status_code
-        result["content_type"] = resp.headers.get("Content-Type", "")
-        result["size_bytes"] = len(resp.content)
-        result["html"] = resp.text
-        result["response_headers"] = dict(resp.headers)
-        result["has_table"] = has_table(resp.text)
-        if result["has_table"]:
-            result["columns"] = extract_columns(resp.text)
-            result["sample_row"] = extract_sample_row(resp.text)
+        elapsed = round(time.monotonic() - t0, 2)
     except Exception as exc:
-        result["error"] = str(exc)
-    return result
+        return {"name": ep["name"], "error": str(exc)}
 
-
-def probe_with_playwright(url: str) -> dict:
-    """
-    Probe a JS-rendered endpoint using Playwright headless Chromium.
-
-    Returns same shape as probe_with_requests.
-    """
     result = {
-        "status_code": None,
-        "content_type": "text/html (playwright)",
-        "size_bytes": 0,
-        "html": "",
-        "response_headers": {},
-        "has_table": False,
-        "columns": [],
-        "sample_row": [],
-        "error": None,
+        "name": ep["name"],
+        "url": ep["url"],
+        "method": ep["method"],
+        "status": resp.status_code,
+        "content_type": resp.headers.get("Content-Type", ""),
+        "size_bytes": len(resp.content),
+        "response_time_s": elapsed,
     }
-    try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(extra_http_headers=HEADERS)
-            response = page.goto(url, timeout=30000, wait_until="networkidle")
-            result["status_code"] = response.status if response else None
-            html = page.content()
-            result["html"] = html
-            result["size_bytes"] = len(html.encode())
-            result["has_table"] = has_table(html)
-            if result["has_table"]:
-                result["columns"] = extract_columns(html)
-                result["sample_row"] = extract_sample_row(html)
-            browser.close()
-    except Exception as exc:
-        result["error"] = str(exc)
+
+    if ep["response_type"] == "json":
+        try:
+            data = resp.json()
+            if isinstance(data, list):
+                result["row_count"] = len(data)
+                result["json_keys"] = sorted(data[0].keys()) if data else []
+            elif isinstance(data, dict):
+                result["json_keys"] = sorted(data.keys())
+        except Exception:
+            result["json_keys"] = []
+    else:
+        soup = BeautifulSoup(resp.text, "lxml")
+        tables = soup.find_all("table")
+        result["table_count"] = len(tables)
+        if tables:
+            first = tables[0]
+            headers = [th.get_text(strip=True) for th in first.find_all("th")]
+            rows = first.find_all("tr")
+            data_rows = [
+                r for r in rows if r.find_all("td")
+            ]
+            sample = []
+            if data_rows:
+                sample = [
+                    td.get_text(strip=True)
+                    for td in data_rows[0].find_all("td")
+                ]
+            result["headers"] = headers
+            result["row_count"] = len(data_rows)
+            result["sample_row"] = sample[:8]
+
     return result
 
 
-def probe_rate_limit(url: str, method: str = "GET", data: dict | None = None) -> dict:
-    """
-    Fire 5 rapid requests and report rate limit behavior.
-
-    Returns: {"got_429": bool, "slowdown_detected": bool, "status_codes": list[int]}
-    """
-    status_codes = []
-    times = []
-    session = requests.Session()
-    session.headers.update(HEADERS)
-    for _ in range(5):
-        t0 = time.monotonic()
-        try:
-            if method == "POST":
-                resp = session.post(url, data=data, timeout=10)
-            else:
-                resp = session.get(url, timeout=10)
-            status_codes.append(resp.status_code)
-        except Exception:
-            status_codes.append(0)
-        times.append(time.monotonic() - t0)
-    avg_time = sum(times) / len(times)
-    slowdown = max(times) > avg_time * 3
-    return {
-        "got_429": 429 in status_codes,
-        "slowdown_detected": slowdown,
-        "status_codes": status_codes,
+def save_baseline(results: list[dict]) -> Path:
+    """Save probe results as schema baseline."""
+    FIXTURES_DIR.mkdir(parents=True, exist_ok=True)
+    baseline = {
+        "probed_at": str(date.today()),
+        "endpoints": {r["name"]: r for r in results if "error" not in r},
     }
+    BASELINE_PATH.write_text(json.dumps(baseline, indent=2), encoding="utf-8")
+    return BASELINE_PATH
 
 
-def format_headers(headers: dict) -> str:
-    """Format selected response headers for the report."""
-    interesting = [
-        "Content-Type", "X-RateLimit-Limit", "X-RateLimit-Remaining",
-        "X-RateLimit-Reset", "Set-Cookie", "Server", "CF-Ray",
-    ]
-    lines = []
-    for key in interesting:
-        if key in headers:
-            lines.append(f"  - {key}: {headers[key][:120]}")
-    if not lines:
-        lines.append("  - (no rate-limit or notable headers observed)")
-    return "\n".join(lines)
+def load_baseline() -> dict:
+    """Load saved baseline."""
+    if not BASELINE_PATH.exists():
+        print(f"No baseline found at {BASELINE_PATH}")
+        print("Run: python tools/probe_endpoints.py --save-baseline")
+        sys.exit(1)
+    return json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
 
 
-def probe_endpoint(name: str, url: str, method: str, data: dict | None,
-                   use_playwright: bool) -> dict:
-    """
-    Full probe of one endpoint: plain HTTP first, Playwright if JS shell.
+def diff_schemas(results: list[dict], baseline: dict) -> list[str]:
+    """Compare live results against baseline, return list of drift messages."""
+    diffs = []
+    base_eps = baseline.get("endpoints", {})
 
-    Returns a findings dict ready for report generation.
-    """
-    print(f"  Probing {name} ({method} {url}) ...", end=" ", flush=True)
+    for r in results:
+        name = r["name"]
+        if "error" in r:
+            diffs.append(f"! {name}: probe failed — {r['error']}")
+            continue
+        if name not in base_eps:
+            diffs.append(f"+ {name}: NEW endpoint (not in baseline)")
+            continue
 
-    plain = probe_with_requests(url, method=method, data=data)
+        old = base_eps[name]
 
-    rendering_mode = "requests + BeautifulSoup"
-    playwright_result = None
+        # Header drift
+        old_h = set(old.get("headers", old.get("json_keys", [])))
+        new_h = set(r.get("headers", r.get("json_keys", [])))
+        for h in new_h - old_h:
+            diffs.append(f"+ {name}: NEW COLUMN '{h}'")
+        for h in old_h - new_h:
+            diffs.append(f"- {name}: REMOVED COLUMN '{h}'")
 
-    if plain["error"]:
-        print(f"ERROR: {plain['error']}")
-        return {
-            "name": name, "url": url, "method": method,
-            "rendering_mode": rendering_mode,
-            "status": "error",
-            "plain": plain,
-            "playwright": None,
-            "rate_limit": None,
-            "columns": [],
-            "sample_row": [],
-        }
+        # Row count drift (> 50% change)
+        old_count = old.get("row_count", 0)
+        new_count = r.get("row_count", 0)
+        if old_count > 0:
+            pct = abs(new_count - old_count) / old_count
+            if pct > 0.5:
+                diffs.append(
+                    f"! {name}: ROW COUNT {old_count} -> {new_count} "
+                    f"({pct:.0%} change)"
+                )
 
-    if not plain["has_table"] and use_playwright:
-        print("JS shell detected, re-fetching with Playwright ...", end=" ", flush=True)
-        rendering_mode = "playwright (JS-rendered)"
-        playwright_result = probe_with_playwright(url)
-        columns = playwright_result["columns"]
-        sample_row = playwright_result["sample_row"]
-        status = "working" if playwright_result["has_table"] else "partial"
-    else:
-        columns = plain["columns"]
-        sample_row = plain["sample_row"]
-        status = "working" if plain["has_table"] else "partial"
+        # Status code change
+        if old.get("status") != r.get("status"):
+            diffs.append(
+                f"! {name}: STATUS {old.get('status')} -> {r.get('status')}"
+            )
 
-    rate_limit = probe_rate_limit(url, method=method, data=data)
-    print("done")
+    # Check for removed endpoints
+    live_names = {r["name"] for r in results}
+    for name in base_eps:
+        if name not in live_names:
+            diffs.append(f"- {name}: MISSING from probe (was in baseline)")
 
-    return {
-        "name": name,
-        "url": url,
-        "method": method,
-        "rendering_mode": rendering_mode,
-        "status": status,
-        "plain": plain,
-        "playwright": playwright_result,
-        "rate_limit": rate_limit,
-        "columns": columns,
-        "sample_row": sample_row,
-    }
-
-
-def render_endpoint_section(f: dict) -> str:
-    """Render one endpoint section for PSX_ENDPOINTS.md."""
-    status_icon = {"working": "✓ Working", "partial": "⚠ Partial", "error": "✗ Error"}.get(
-        f["status"], "?"
-    )
-
-    rate = f["rate_limit"]
-    if rate is None:
-        rate_text = "- Could not probe (initial request failed)"
-    elif rate["got_429"]:
-        rate_text = f"- Got 429 during 5-request burst. Status codes: {rate['status_codes']}"
-    elif rate["slowdown_detected"]:
-        rate_text = f"- Slowdown detected during burst. Status codes: {rate['status_codes']}"
-    else:
-        rate_text = f"- 5 rapid requests: all returned {rate['status_codes']} — no throttling observed"
-
-    plain = f["plain"]
-    pw = f["playwright"]
-    active = pw if pw and pw["has_table"] else plain
-
-    columns_text = ", ".join(f["columns"]) if f["columns"] else "(none extracted)"
-    sample_text = " | ".join(f["sample_row"]) if f["sample_row"] else "(none extracted)"
-
-    resp_headers_text = format_headers(active.get("response_headers", {}))
-
-    section = f"""
-## /{f['name']}
-
-**URL:** {f['url']}
-**Method:** {f['method']}
-**Rendering:** {f['rendering_mode']}
-**Status:** {status_icon}
-
-### Request
-
-- Form data / params: {_request_params(f['name'])}
-- Headers sent: User-Agent, Accept, Accept-Language, Referer, X-Requested-With
-
-### Response
-
-- Status code: {active.get('status_code', 'N/A')}
-- Content-Type: {active.get('content_type', 'N/A')}
-- Response size: {active.get('size_bytes', 0):,} bytes
-- Columns observed (from <th> tags): {columns_text}
-- Sample row: {sample_text}
-
-### Response Headers
-
-{resp_headers_text}
-
-### Rate Limit Behavior
-
-{rate_text}
-
-### Anomalies
-
-{_anomalies(f)}
-
----"""
-    return section
-
-
-def _request_params(name: str) -> str:
-    if name == "historical":
-        return f"symbol=ENGRO, start={START_DATE}, end={END_DATE} (POST form data)"
-    return "None (GET)"
-
-
-def _anomalies(f: dict) -> str:
-    notes = []
-    plain = f["plain"]
-    pw = f["playwright"]
-
-    if plain["error"]:
-        notes.append(f"plain HTTP error: {plain['error']}")
-    if pw and pw["error"]:
-        notes.append(f"Playwright error: {pw['error']}")
-    if plain["status_code"] and plain["status_code"] not in (200, 201):
-        notes.append(f"Unexpected HTTP status on plain request: {plain['status_code']}")
-    if not plain["has_table"] and pw is None:
-        notes.append("No HTML table found and Playwright was not attempted (--no-playwright?)")
-    if not notes:
-        return "- None"
-    return "\n".join(f"- {n}" for n in notes)
+    return diffs
 
 
 def write_report(results: list[dict]) -> Path:
@@ -333,96 +206,113 @@ def write_report(results: list[dict]) -> Path:
     DOCS_DIR.mkdir(parents=True, exist_ok=True)
     output_path = DOCS_DIR / "PSX_ENDPOINTS.md"
 
-    status_map = {
-        "working": "✓ Working",
-        "partial": "⚠ Partial",
-        "error": "✗ Error",
-    }
+    lines = [
+        "# PSX Endpoints — Live Probe Results",
+        "",
+        f"**Last probed:** {date.today()}",
+        "**Probe script:** `python tools/probe_endpoints.py`",
+        "",
+        "---",
+        "",
+        "## Summary",
+        "",
+        "| Endpoint | Method | Status | Tables | Rows | Time |",
+        "|---|---|---|---|---|---|",
+    ]
 
-    summary_rows = "\n".join(
-        f"| /{r['name']:<20} | {r['method']:<6} | {r['rendering_mode']:<35} "
-        f"| {status_map.get(r['status'], '?'):<12} | |"
-        for r in results
-    )
+    for r in results:
+        if "error" in r:
+            lines.append(f"| {r['name']} | — | ERROR | — | — | — |")
+            continue
+        tables = r.get("table_count", "—")
+        rows = r.get("row_count", "—")
+        lines.append(
+            f"| `{r['url']}` | {r['method']} | {r['status']} "
+            f"| {tables} | {rows} | {r['response_time_s']}s |"
+        )
 
-    sections = "\n".join(render_endpoint_section(r) for r in results)
+    lines.extend(["", "---", ""])
 
-    content = f"""# PSX Endpoints — Live Probe Results
+    for r in results:
+        if "error" in r:
+            lines.extend([f"## {r['name']}", "", f"**Error:** {r['error']}", "", "---", ""])
+            continue
+        lines.append(f"## {r['name']}")
+        lines.append("")
+        lines.append(f"**URL:** `{BASE_URL}{r['url']}`")
+        lines.append(f"**Method:** {r['method']}")
+        lines.append(f"**Status:** {r['status']}")
+        lines.append(f"**Size:** {r['size_bytes']:,} bytes")
+        lines.append(f"**Response time:** {r['response_time_s']}s")
+        headers = r.get("headers", r.get("json_keys", []))
+        if headers:
+            lines.append(f"**Columns:** `{', '.join(headers)}`")
+        rows = r.get("row_count")
+        if rows is not None:
+            lines.append(f"**Row count:** {rows}")
+        sample = r.get("sample_row", [])
+        if sample:
+            lines.append(f"**Sample row:** `{' | '.join(sample)}`")
+        lines.extend(["", "---", ""])
 
-**Last probed:** {date.today()}
-**Probe script:** `python tools/probe_endpoints.py`
-
----
-
-## Summary Table
-
-| Endpoint               | Method | Rendering                            | Status       | Notes |
-|------------------------|--------|--------------------------------------|--------------|-------|
-{summary_rows}
-
----
-{sections}
-"""
-    output_path.write_text(content, encoding="utf-8")
+    output_path.write_text("\n".join(lines), encoding="utf-8")
     return output_path
 
 
-ENDPOINTS = [
-    {
-        "name": "historical",
-        "url": f"{BASE_URL}/historical",
-        "method": "POST",
-        "data": {"symbol": "ENGRO", "start": str(START_DATE), "end": str(END_DATE)},
-    },
-    {"name": "indices", "url": f"{BASE_URL}/indices", "method": "GET", "data": None},
-    {"name": "sector-summary", "url": f"{BASE_URL}/sector-summary", "method": "GET", "data": None},
-    {"name": "financial-reports", "url": f"{BASE_URL}/financial-reports", "method": "GET", "data": None},
-    {"name": "screener", "url": f"{BASE_URL}/screener", "method": "GET", "data": None},
-    {"name": "trading-panel", "url": f"{BASE_URL}/trading-panel", "method": "GET", "data": None},
-    {"name": "debt-market", "url": f"{BASE_URL}/debt-market", "method": "GET", "data": None},
-    {"name": "eligible-scrips", "url": f"{BASE_URL}/eligible-scrips", "method": "GET", "data": None},
-]
-
-JS_ENDPOINTS = {"screener", "trading-panel"}
-
-
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Probe PSX endpoints and write PSX_ENDPOINTS.md")
-    parser.add_argument("--endpoint", help="Probe only this endpoint name (e.g. historical)")
-    parser.add_argument("--no-playwright", action="store_true", help="Skip JS-rendered endpoints")
+    parser = argparse.ArgumentParser(
+        description="Probe PSX AJAX endpoints"
+    )
+    parser.add_argument("--endpoint", help="Probe only this endpoint name")
+    parser.add_argument(
+        "--save-baseline", action="store_true",
+        help="Save schema baseline to tests/fixtures/endpoint_schema.json",
+    )
+    parser.add_argument(
+        "--diff", action="store_true",
+        help="Compare live schema against baseline, exit 1 on drift",
+    )
     args = parser.parse_args()
 
     targets = ENDPOINTS
     if args.endpoint:
         targets = [e for e in ENDPOINTS if e["name"] == args.endpoint]
         if not targets:
-            print(f"Unknown endpoint: {args.endpoint}")
-            print(f"Valid names: {[e['name'] for e in ENDPOINTS]}")
+            names = [e["name"] for e in ENDPOINTS]
+            print(f"Unknown: {args.endpoint}. Valid: {names}")
             sys.exit(1)
 
-    use_playwright = not args.no_playwright
+    session = _session()
     results = []
 
     print(f"Probing {len(targets)} endpoint(s)...")
     for ep in targets:
-        skip_pw = ep["name"] in JS_ENDPOINTS and not use_playwright
-        if skip_pw:
-            print(f"  Skipping {ep['name']} (--no-playwright)")
-            continue
-        result = probe_endpoint(
-            name=ep["name"],
-            url=ep["url"],
-            method=ep["method"],
-            data=ep.get("data"),
-            use_playwright=use_playwright,
-        )
+        print(f"  {ep['name']} ({ep['method']} {ep['url']}) ...", end=" ", flush=True)
+        result = probe_endpoint(ep, session)
         results.append(result)
+        if "error" in result:
+            print(f"ERROR: {result['error']}")
+        else:
+            print(f"OK ({result['response_time_s']}s)")
 
-    if results:
-        out = write_report(results)
-        print(f"\nReport written to: {out}")
+    if args.save_baseline:
+        path = save_baseline(results)
+        print(f"\nBaseline saved: {path}")
+
+    if args.diff:
+        baseline = load_baseline()
+        drifts = diff_schemas(results, baseline)
+        if drifts:
+            print(f"\n{len(drifts)} schema drift(s) detected:")
+            for d in drifts:
+                print(f"  {d}")
+            sys.exit(1)
+        else:
+            print("\nNo schema drift detected.")
+            sys.exit(0)
     else:
-        print("No endpoints probed.")
+        report = write_report(results)
+        print(f"\nReport: {report}")
 
 
 if __name__ == "__main__":

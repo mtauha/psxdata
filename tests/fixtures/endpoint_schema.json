@@ -1,0 +1,388 @@
+{
+  "probed_at": "2026-04-08",
+  "endpoints": {
+    "historical": {
+      "name": "historical",
+      "url": "/historical",
+      "method": "POST",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 433905,
+      "response_time_s": 4.43,
+      "table_count": 1,
+      "headers": [
+        "DATE",
+        "OPEN",
+        "HIGH",
+        "LOW",
+        "CLOSE",
+        "VOLUME"
+      ],
+      "row_count": 2163,
+      "sample_row": [
+        "Jan 3, 2025",
+        "481.99",
+        "496.00",
+        "474.01",
+        "485.38",
+        "4,496,408"
+      ]
+    },
+    "screener": {
+      "name": "screener",
+      "url": "/screener",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 675849,
+      "response_time_s": 1.12,
+      "table_count": 1,
+      "headers": [
+        "SYMBOL",
+        "SECTOR",
+        "LISTED IN",
+        "MARKET CAP.",
+        "PRICE",
+        "CHANGE (%)",
+        "1-YEAR CH. (%) *",
+        "PE RATIO (TTM)",
+        "DIVIDEND YIELD (%)",
+        "FREE FLOAT",
+        "30D VOLUME AVG."
+      ],
+      "row_count": 729,
+      "sample_row": [
+        "786",
+        "0813",
+        "ALLSHR",
+        "892.2M",
+        "44.69",
+        "-9.99%",
+        "406.69%",
+        "17.80"
+      ]
+    },
+    "trading_panel": {
+      "name": "trading_panel",
+      "url": "/trading-panel",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 60658,
+      "response_time_s": 0.46,
+      "table_count": 33,
+      "headers": [
+        "Date",
+        "Time",
+        "Total Trades",
+        "Advance",
+        "Decline",
+        "Unchanged",
+        "Total",
+        "Exchange Volume",
+        "Exchange Value"
+      ],
+      "row_count": 1,
+      "sample_row": [
+        "Apr 8, 2026",
+        "3:05 PM",
+        "400,668",
+        "466",
+        "19",
+        "5",
+        "490",
+        "1,252,783,918"
+      ]
+    },
+    "debt_market": {
+      "name": "debt_market",
+      "url": "/debt-market",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 188247,
+      "response_time_s": 0.48,
+      "table_count": 4,
+      "headers": [
+        "Security Code",
+        "Security Name",
+        "Face Value",
+        "Listing Date",
+        "Issue Date",
+        "Issue Size",
+        "Maturity Date",
+        "Coupon/Rental Rate",
+        "Previous Coupon/Rental Date",
+        "Next Coupon/Rental Date",
+        "Outstanding Days",
+        "Remaining Years"
+      ],
+      "row_count": 67,
+      "sample_row": [
+        "P01GIS080227",
+        "1 Year GIS Discounted Mat - 08-Feb-27",
+        "5,000",
+        "February 11, 2026",
+        "February 09, 2026",
+        "53.71B",
+        "February 08, 2027",
+        "0.0000%"
+      ]
+    },
+    "eligible_scrips": {
+      "name": "eligible_scrips",
+      "url": "/eligible-scrips",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 338083,
+      "response_time_s": 1.81,
+      "table_count": 9,
+      "headers": [
+        "Symbol",
+        "Name"
+      ],
+      "row_count": 565,
+      "sample_row": [
+        "786",
+        "786 Investments Limited"
+      ]
+    },
+    "trading_board_reg_main": {
+      "name": "trading_board_reg_main",
+      "url": "/trading-board/REG/main",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 371100,
+      "response_time_s": 0.5,
+      "table_count": 1,
+      "headers": [
+        "SYMBOL",
+        "NAME",
+        "BID VOL.",
+        "BID PRICE",
+        "OFFER VOL.",
+        "OFFER PRICE",
+        "LDCP",
+        "CHANGE",
+        "VOLUME"
+      ],
+      "row_count": 486,
+      "sample_row": [
+        "FNEL",
+        "First National Equities Limited",
+        "795,076",
+        "1.56",
+        "1,214,813",
+        "1.57",
+        "1.16",
+        "0.41"
+      ]
+    },
+    "trading_board_reg_gem": {
+      "name": "trading_board_reg_gem",
+      "url": "/trading-board/REG/gem",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 3991,
+      "response_time_s": 0.46,
+      "table_count": 1,
+      "headers": [
+        "SYMBOL",
+        "NAME",
+        "BID VOL.",
+        "BID PRICE",
+        "OFFER VOL.",
+        "OFFER PRICE",
+        "LDCP",
+        "CHANGE",
+        "VOLUME"
+      ],
+      "row_count": 4,
+      "sample_row": [
+        "GEMPACRA",
+        "The Pakistan Credit Rating Agency Ltd",
+        "5,000",
+        "30.00",
+        "5,000",
+        "32.50",
+        "31.00",
+        "0.00"
+      ]
+    },
+    "trading_board_bnb_bnb": {
+      "name": "trading_board_bnb_bnb",
+      "url": "/trading-board/BNB/bnb",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 23432,
+      "response_time_s": 0.47,
+      "table_count": 1,
+      "headers": [
+        "SYMBOL",
+        "BID VOL.",
+        "BID PRICE",
+        "BID YIELD (%)",
+        "OFFER VOL.",
+        "OFFER PRICE",
+        "OFFER YIELD (%)",
+        "LTP",
+        "LTY (%)",
+        "LDCP",
+        "LDCY (%)",
+        "CHANGE",
+        "VOLUME"
+      ],
+      "row_count": 24,
+      "sample_row": [
+        "P05FRR180929",
+        "0",
+        "0.0000",
+        "0.0000",
+        "2,000,000",
+        "107.3627",
+        "11.2003",
+        "103.5800"
+      ]
+    },
+    "symbols": {
+      "name": "symbols",
+      "url": "/symbols",
+      "method": "GET",
+      "status": 200,
+      "content_type": "application/json; charset=utf-8",
+      "size_bytes": 133364,
+      "response_time_s": 0.64,
+      "row_count": 1029,
+      "json_keys": [
+        "isDebt",
+        "isETF",
+        "name",
+        "sectorName",
+        "symbol"
+      ]
+    },
+    "sector_summary": {
+      "name": "sector_summary",
+      "url": "/sector-summary/sectorwise",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 481584,
+      "response_time_s": 1.22,
+      "table_count": 38,
+      "headers": [
+        "Sector Code",
+        "Sector Name",
+        "Advance",
+        "Decline",
+        "Unchange",
+        "Turnover",
+        "Market Cap. (B)"
+      ],
+      "row_count": 37,
+      "sample_row": [
+        "0801",
+        "AUTOMOBILE ASSEMBLER",
+        "10",
+        "0",
+        "0",
+        "2,617,350",
+        "680.79"
+      ]
+    },
+    "financial_reports": {
+      "name": "financial_reports",
+      "url": "/financial-reports-list",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 1057,
+      "response_time_s": 0.88,
+      "table_count": 1,
+      "headers": [
+        "SYMBOL",
+        "NAME",
+        "YEAR",
+        "TYPE",
+        "PERIOD ENDED",
+        "POSTING DATE",
+        "POSTING TIME",
+        "DOCUMENT"
+      ],
+      "row_count": 0,
+      "sample_row": []
+    },
+    "indices_kse100": {
+      "name": "indices_kse100",
+      "url": "/indices/KSE100",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 73938,
+      "response_time_s": 0.7,
+      "table_count": 1,
+      "headers": [
+        "SYMBOL",
+        "NAME",
+        "LDCP",
+        "CURRENT",
+        "CHANGE",
+        "CHANGE (%)",
+        "IDX WTG (%)",
+        "IDX POINT",
+        "VOLUME",
+        "FREEFLOAT (M)",
+        "MARKET CAP (M)"
+      ],
+      "row_count": 100,
+      "sample_row": [
+        "ABL",
+        "Allied Bank Limited",
+        "173.84",
+        "185.11",
+        "11.27",
+        "6.48%",
+        "0.44%",
+        "44.29"
+      ]
+    },
+    "indices_allshr": {
+      "name": "indices_allshr",
+      "url": "/indices/ALLSHR",
+      "method": "GET",
+      "status": 200,
+      "content_type": "text/html; charset=utf-8",
+      "size_bytes": 399283,
+      "response_time_s": 0.66,
+      "table_count": 1,
+      "headers": [
+        "SYMBOL",
+        "NAME",
+        "LDCP",
+        "CURRENT",
+        "CHANGE",
+        "CHANGE (%)",
+        "IDX WTG (%)",
+        "IDX POINT",
+        "VOLUME",
+        "SHARES (M)",
+        "MARKET CAP (M)"
+      ],
+      "row_count": 549,
+      "sample_row": [
+        "786",
+        "786 Investments Limited",
+        "49.65",
+        "44.69",
+        "-4.96",
+        "-9.99%",
+        "0.00%",
+        "-0.53"
+      ]
+    }
+  }
+}

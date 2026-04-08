@@ -9,14 +9,18 @@ No magic numbers or hardcoded strings anywhere else in psxdata — import from h
 BASE_URL = "https://dps.psx.com.pk"
 
 ENDPOINTS: dict[str, str] = {
-    "historical": "/historical",
-    "indices": "/indices",
-    "sector_summary": "/sector-summary",
-    "financial_reports": "/financial-reports",
-    "screener": "/screener",
+    # Page URLs
     "trading_panel": "/trading-panel",
     "debt_market": "/debt-market",
     "eligible_scrips": "/eligible-scrips",
+    "screener": "/screener",
+    # AJAX endpoints (discovered during migration — see issue #31)
+    "historical": "/historical",
+    "trading_board": "/trading-board",
+    "symbols": "/symbols",
+    "sector_summary": "/sector-summary/sectorwise",
+    "financial_reports": "/financial-reports-list",
+    "indices": "/indices",
 }
 
 # Single well-formed User-Agent — PSX showed no UA-based blocking in Phase 0.
@@ -56,6 +60,18 @@ if len(RETRY_DELAYS) != MAX_RETRIES - 1:
 MAX_REQUESTS_PER_SECOND: int = 2
 MAX_WORKERS: int = 5
 DEFAULT_CHUNK_DAYS: int = 365
+
+# ---------------------------------------------------------------------------
+# Trading board structure
+# ---------------------------------------------------------------------------
+BOARDS: tuple[str, ...] = ("main", "gem", "bnb")
+MARKETS: tuple[str, ...] = ("REG", "ODL", "DFC", "SQR", "CSF")
+
+INDEX_NAMES: tuple[str, ...] = (
+    "KSE100", "KSE100PR", "ALLSHR", "KSE30", "KMI30", "BKTI", "OGTI",
+    "KMIALLSHR", "PSXDIV20", "UPP9", "NITPGI", "NBPPGI", "MZNPI",
+    "JSMFI", "ACI", "JSGBKTI", "HBLTTI", "MII30",
+)
 
 # ---------------------------------------------------------------------------
 # Cache
@@ -127,4 +143,22 @@ COLUMN_MAP: dict[str, str] = {
     "Unchange": "unchanged",
     "Turnover": "turnover",
     "Market Cap. (B)": "market_cap_b",
+    # Trading board columns
+    "BID VOL.": "bid_vol",
+    "BID PRICE": "bid_price",
+    "OFFER VOL.": "offer_vol",
+    "OFFER PRICE": "offer_price",
+    # BNB-specific (debt trading board)
+    "BID YIELD (%)": "bid_yield",
+    "OFFER YIELD (%)": "offer_yield",
+    "LTP": "ltp",
+    "LTY (%)": "lty",
+    "LDCY (%)": "ldcy",
+    # Index constituents
+    "Current Index": "current_index",
+    "IDX WTG (%)": "idx_weight",
+    "IDX POINT": "idx_point",
+    "FREEFLOAT (M)": "freefloat_m",
+    "SHARES (M)": "shares_m",
+    "MARKET CAP (M)": "market_cap_m",
 }

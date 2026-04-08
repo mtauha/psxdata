@@ -79,12 +79,12 @@ psxdata/
 │   ├── exceptions.py           # Custom exceptions: PSXUnavailableError, ParseError, ValidationError
 │   ├── utils.py                # Date range chunking, rate limiter, shared helpers
 │   ├── scrapers/
-│   │   ├── base.py             # BaseScraper: session, retry, rate limit, playwright instance
+│   │   ├── base.py             # BaseScraper: session, retry, rate limit
 │   │   ├── historical.py       # POST /historical — OHLCV data
-│   │   ├── realtime.py         # GET /trading-panel — live quotes
-│   │   ├── indices.py          # GET /indices — index values and history
-│   │   ├── sectors.py          # GET /sector-summary — sector aggregates (JS-rendered)
-│   │   ├── fundamentals.py     # GET /financial-reports — P/E, EPS, book value (JS-rendered)
+│   │   ├── realtime.py         # GET /trading-board/{market}/{board} — live quotes
+│   │   ├── indices.py          # GET /indices/{name} — index constituents
+│   │   ├── sectors.py          # GET /sector-summary/sectorwise — sector aggregates
+│   │   ├── fundamentals.py     # GET /financial-reports-list — P/E, EPS, book value
 │   │   ├── screener.py         # GET /screener — all listed tickers
 │   │   ├── debt_market.py      # GET /debt-market — TFCs, Sukuks
 │   │   └── eligible_scrips.py  # GET /eligible-scrips — margin trading eligible stocks
@@ -239,9 +239,9 @@ mypy            # Type checker
 |---|---|
 | PSX changes HTML structure | Dynamic `<th>` header extraction; log warning on unknown columns; open `endpoint_change` GitHub issue |
 | PSX changes date format | Multi-format fallback + dateutil fuzzy parsing in `parse_date_safely()` |
-| Network timeout / 5xx | 3-attempt exponential backoff (1s / 2s / 4s); per-chunk isolation in ThreadPoolExecutor |
+| Network timeout / 5xx | 3-attempt exponential backoff (1s / 2s / 4s) in `BaseScraper._request()` |
 | IP rate-limited by PSX | Max 2 req/sec global rate limiter; max 5 concurrent workers |
-| JS page load timeout | Playwright timeout config; graceful fallback to empty result + warning |
+| PSX removes AJAX endpoint | Schema drift detected by `python tools/probe_endpoints.py --diff`; open `endpoint_change` issue |
 | Redis unavailable | Silent fallback to in-memory cache + warning log |
 | Corrupt / anomalous OHLC data | OHLC + volume + date validators; warn and keep partial rows; drop only if fully corrupt |
 

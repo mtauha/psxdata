@@ -105,3 +105,44 @@ def parse_html_table(html: str) -> list[dict[str, str]]:
         logger.warning("No table headers found in HTML — returning empty result")
         return []
     return parse_table_rows(table, headers)
+
+
+def parse_tables_by_heading(html: str) -> dict[str, list[dict[str, str]]]:
+    """Parse multiple HTML tables keyed by the preceding <h2> heading.
+
+    Used by debt_market.py and eligible_scrips.py. Each table is associated
+    with the nearest preceding <h2> sibling. Falls back to "table_N" (0-indexed)
+    if no preceding <h2> is found.
+
+    Args:
+        html: Raw HTML string from a PSX endpoint response.
+
+    Returns:
+        Dict mapping normalized heading -> list of row dicts.
+        Empty dict if no tables found.
+    """
+    soup = BeautifulSoup(html, "lxml")
+    tables = soup.find_all("table")
+    if not tables:
+        return {}
+
+    result: dict[str, list[dict[str, str]]] = {}
+    for i, table in enumerate(tables):
+        # Walk backwards through previous siblings to find nearest <h2>
+        heading: str | None = None
+        for sibling in table.find_all_previous():
+            if sibling.name == "h2":
+                heading = normalize_column_name(sibling.get_text(strip=True))
+                break
+            if sibling.name == "table":
+                break  # hit another table before finding a heading
+
+        key = heading if heading else f"table_{i}"
+        headers = extract_table_headers(table)
+        if not headers:
+            logger.warning("No headers found for table with key %r — skipping", key)
+            continue
+        rows = parse_table_rows(table, headers)
+        result[key] = rows
+
+    return result

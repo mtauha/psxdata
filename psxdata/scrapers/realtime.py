@@ -10,7 +10,7 @@ Valid markets: REG, ODL, DFC, SQR, CSF  (see constants.MARKETS)
 Valid boards:  main, gem, bnb            (see constants.BOARDS)
 
 Quirk:     BNB board returns yield columns (bid_yield, offer_yield, lty, ldcy)
-           instead of standard price columns (bid_price, offer_price).
+           alongside standard price columns (bid_price, offer_price).
            Both schemas are handled by COLUMN_MAP — no special-casing needed.
 """
 from __future__ import annotations

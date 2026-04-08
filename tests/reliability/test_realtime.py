@@ -31,7 +31,7 @@ class TestRealtimeScraper:
         assert "symbol" in df.columns
 
     def test_bnb_returns_yield_columns(self):
-        """BNB board schema has yield columns in addition to price columns."""
+        """BNB board schema includes yield columns alongside standard price columns."""
         scraper = RealtimeScraper()
         with patch.object(scraper._session, "request", return_value=_mock_response(FIXTURE_BNB)):
             df = scraper.fetch("REG", "bnb")

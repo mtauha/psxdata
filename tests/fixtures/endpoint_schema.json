@@ -8,7 +8,7 @@
       "status": 200,
       "content_type": "text/html; charset=utf-8",
       "size_bytes": 433905,
-      "response_time_s": 4.43,
+      "response_time_s": 3.33,
       "table_count": 1,
       "headers": [
         "DATE",
@@ -34,8 +34,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 675849,
-      "response_time_s": 1.12,
+      "size_bytes": 675764,
+      "response_time_s": 1.56,
       "table_count": 1,
       "headers": [
         "SYMBOL",
@@ -68,8 +68,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 60658,
-      "response_time_s": 0.46,
+      "size_bytes": 60663,
+      "response_time_s": 0.48,
       "table_count": 33,
       "headers": [
         "Date",
@@ -85,13 +85,13 @@
       "row_count": 1,
       "sample_row": [
         "Apr 8, 2026",
-        "3:05 PM",
-        "400,668",
-        "466",
+        "3:15 PM",
+        "411,951",
+        "465",
         "19",
-        "5",
+        "6",
         "490",
-        "1,252,783,918"
+        "1,297,902,318"
       ]
     },
     "debt_market": {
@@ -101,7 +101,7 @@
       "status": 200,
       "content_type": "text/html; charset=utf-8",
       "size_bytes": 188247,
-      "response_time_s": 0.48,
+      "response_time_s": 0.49,
       "table_count": 4,
       "headers": [
         "Security Code",
@@ -136,7 +136,7 @@
       "status": 200,
       "content_type": "text/html; charset=utf-8",
       "size_bytes": 338083,
-      "response_time_s": 1.81,
+      "response_time_s": 3.78,
       "table_count": 9,
       "headers": [
         "Symbol",
@@ -154,8 +154,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 371100,
-      "response_time_s": 0.5,
+      "size_bytes": 371163,
+      "response_time_s": 1.71,
       "table_count": 1,
       "headers": [
         "SYMBOL",
@@ -172,9 +172,9 @@
       "sample_row": [
         "FNEL",
         "First National Equities Limited",
-        "795,076",
+        "1,320,521",
         "1.56",
-        "1,214,813",
+        "481,539",
         "1.57",
         "1.16",
         "0.41"
@@ -186,8 +186,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 3991,
-      "response_time_s": 0.46,
+      "size_bytes": 3978,
+      "response_time_s": 0.47,
       "table_count": 1,
       "headers": [
         "SYMBOL",
@@ -218,8 +218,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 23432,
-      "response_time_s": 0.47,
+      "size_bytes": 23566,
+      "response_time_s": 0.86,
       "table_count": 1,
       "headers": [
         "SYMBOL",
@@ -255,7 +255,7 @@
       "status": 200,
       "content_type": "application/json; charset=utf-8",
       "size_bytes": 133364,
-      "response_time_s": 0.64,
+      "response_time_s": 0.85,
       "row_count": 1029,
       "json_keys": [
         "isDebt",
@@ -271,8 +271,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 481584,
-      "response_time_s": 1.22,
+      "size_bytes": 481507,
+      "response_time_s": 1.21,
       "table_count": 38,
       "headers": [
         "Sector Code",
@@ -290,8 +290,8 @@
         "10",
         "0",
         "0",
-        "2,617,350",
-        "680.79"
+        "2,800,584",
+        "681.01"
       ]
     },
     "financial_reports": {
@@ -301,7 +301,7 @@
       "status": 200,
       "content_type": "text/html; charset=utf-8",
       "size_bytes": 1057,
-      "response_time_s": 0.88,
+      "response_time_s": 0.89,
       "table_count": 1,
       "headers": [
         "SYMBOL",
@@ -322,8 +322,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 73938,
-      "response_time_s": 0.7,
+      "size_bytes": 73858,
+      "response_time_s": 0.66,
       "table_count": 1,
       "headers": [
         "SYMBOL",
@@ -343,11 +343,11 @@
         "ABL",
         "Allied Bank Limited",
         "173.84",
-        "185.11",
-        "11.27",
-        "6.48%",
+        "186.00",
+        "12.16",
+        "7.00%",
         "0.44%",
-        "44.29"
+        "47.89"
       ]
     },
     "indices_allshr": {
@@ -356,8 +356,8 @@
       "method": "GET",
       "status": 200,
       "content_type": "text/html; charset=utf-8",
-      "size_bytes": 399283,
-      "response_time_s": 0.66,
+      "size_bytes": 399197,
+      "response_time_s": 1.04,
       "table_count": 1,
       "headers": [
         "SYMBOL",

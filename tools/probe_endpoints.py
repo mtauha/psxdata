@@ -45,7 +45,8 @@ def _session() -> requests.Session:
 
 ENDPOINTS = [
     {"name": "historical", "url": "/historical", "method": "POST",
-     "data": {"symbol": "ENGRO"}, "response_type": "html"},
+     "data": {"symbol": "ENGRO", "date_from": "2010-01-01", "date_to": "2025-12-31"},
+     "response_type": "html"},
     {"name": "screener", "url": "/screener", "method": "GET",
      "data": None, "response_type": "html"},
     {"name": "trading_panel", "url": "/trading-panel", "method": "GET",
@@ -156,13 +157,14 @@ def diff_schemas(results: list[dict], baseline: dict) -> list[str]:
     diffs = []
     base_eps = baseline.get("endpoints", {})
 
+    info = []  # informational only — new endpoints not in baseline
     for r in results:
         name = r["name"]
         if "error" in r:
             diffs.append(f"! {name}: probe failed — {r['error']}")
             continue
         if name not in base_eps:
-            diffs.append(f"+ {name}: NEW endpoint (not in baseline)")
+            info.append(f"+ {name}: NEW endpoint (not in baseline — run --save-baseline)")
             continue
 
         old = base_eps[name]
@@ -178,7 +180,9 @@ def diff_schemas(results: list[dict], baseline: dict) -> list[str]:
         # Row count drift (> 50% change)
         old_count = old.get("row_count", 0)
         new_count = r.get("row_count", 0)
-        if old_count > 0:
+        if old_count == 0 and new_count > 0:
+            diffs.append(f"! {name}: ROW COUNT was 0, now {new_count} (table appeared)")
+        elif old_count > 0:
             pct = abs(new_count - old_count) / old_count
             if pct > 0.5:
                 diffs.append(
@@ -197,6 +201,11 @@ def diff_schemas(results: list[dict], baseline: dict) -> list[str]:
     for name in base_eps:
         if name not in live_names:
             diffs.append(f"- {name}: MISSING from probe (was in baseline)")
+
+    if info:
+        print("  Info (not drift):")
+        for msg in info:
+            print(f"    {msg}")
 
     return diffs
 
@@ -273,6 +282,11 @@ def main() -> None:
         help="Compare live schema against baseline, exit 1 on drift",
     )
     args = parser.parse_args()
+
+    if args.save_baseline and args.diff:
+        print("Error: --save-baseline and --diff are mutually exclusive.", file=sys.stderr)
+        print("Run --save-baseline first, then --diff separately.", file=sys.stderr)
+        sys.exit(2)
 
     targets = ENDPOINTS
     if args.endpoint:

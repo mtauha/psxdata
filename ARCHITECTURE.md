@@ -2,7 +2,7 @@
 
 `psxdata` is a production-grade data pipeline with two consumer surfaces: a **Python library** (yfinance-style API) and a **FastAPI REST service**. It scrapes 8 PSX endpoints, normalizes and validates the data, caches it on disk, and exposes it through clean interfaces.
 
-The hardest constraints are external: PSX is an unstable third-party dependency that changes HTML structure without notice, throttles aggressive scrapers, and requires JavaScript rendering on two of its endpoints.
+The hardest constraints are external: PSX is an unstable third-party dependency that changes HTML structure without notice and throttles aggressive scrapers. All endpoints are accessible via plain HTTP — some through hidden AJAX endpoints discovered during migration (see issue #31).
 
 ---
 
@@ -13,13 +13,13 @@ flowchart TD
     PSX["PSX Servers\ndps.psx.com.pk\n8 endpoints"]
 
     subgraph Scrapers["Scraper Layer"]
-        BASE["BaseScraper\nsession · retry · rate limiter · playwright"]
+        BASE["BaseScraper\nsession · retry · rate limiter"]
         H["historical.py\nPOST · requests+BS4"]
         RT["realtime.py\nGET · requests+BS4"]
         SC["screener.py\nGET · requests+BS4"]
         IX["indices.py\nGET · requests+BS4"]
-        SE["sectors.py\nGET · playwright"]
-        FU["fundamentals.py\nGET · playwright"]
+        SE["sectors.py\nGET · requests+BS4\n/sector-summary/sectorwise"]
+        FU["fundamentals.py\nGET · requests+BS4\n/financial-reports-list"]
         DM["debt_market.py\nGET · requests+BS4"]
         ES["eligible_scrips.py\nGET · requests+BS4"]
     end
@@ -45,7 +45,7 @@ flowchart TD
         API["api/\nslowapi 60 req/min/IP\nRedis cache optional\nSwagger /docs · ReDoc /redoc"]
     end
 
-    PSX -->|requests / playwright| BASE
+    PSX -->|requests| BASE
     BASE --> H & RT & SC & IX & SE & FU & DM & ES
     H & RT & SC & IX & SE & FU & DM & ES -->|raw HTML / JSON| HTML
     HTML --> NORM
@@ -130,42 +130,23 @@ psxdata/
 
 | Scraper | PSX Endpoint | HTTP Method | Mode |
 |---|---|---|---|
-| `historical.py` | `/historical` | POST | `requests` + BeautifulSoup |
-| `realtime.py` | `/trading-panel` | GET | `requests` + BeautifulSoup |
+| `historical.py` | `/historical` | POST `{symbol}` | `requests` + BeautifulSoup |
+| `realtime.py` | `/trading-board/{market}/{board}` | GET | `requests` + BeautifulSoup (AJAX) |
 | `screener.py` | `/screener` | GET | `requests` + BeautifulSoup |
-| `indices.py` | `/indices` | GET | `requests` + BeautifulSoup |
-| `sectors.py` | `/sector-summary` | GET | `playwright` (JS-rendered) |
-| `fundamentals.py` | `/financial-reports` | GET | `playwright` (JS-rendered) — empty table observed in Phase 0 |
+| `indices.py` | `/indices/{name}` | GET | `requests` + BeautifulSoup (AJAX) |
+| `sectors.py` | `/sector-summary/sectorwise` | GET | `requests` + BeautifulSoup (AJAX) |
+| `fundamentals.py` | `/financial-reports-list` | GET | `requests` + BeautifulSoup (AJAX) |
 | `debt_market.py` | `/debt-market` | GET | `requests` + BeautifulSoup |
 | `eligible_scrips.py` | `/eligible-scrips` | GET | `requests` + BeautifulSoup |
+| — | `/symbols` | GET | JSON (instrument metadata) |
 
 **Do NOT use:** `www.psx.com.pk/*` or `dps.psx.com.pk/timeseries/eod` — broken/redirect.
 
 ---
 
-## Concurrent Historical Fetching
+## Historical Data Fetching
 
-Date ranges are split into year-sized chunks and fetched in parallel:
-
-```mermaid
-flowchart LR
-    REQ["stocks('ENGRO'\n2020–2024)"]
-
-    subgraph Pool["ThreadPoolExecutor (max_workers=5)"]
-        F1["Future 1\n2020-01-01→2020-12-31"]
-        F2["Future 2\n2021-01-01→2021-12-31"]
-        F3["Future 3\n2022-01-01→2022-12-31"]
-        F4["Future 4\n2023-01-01→2023-12-31"]
-        F5["Future 5\n2024-01-01→2024-12-31"]
-    end
-
-    COLLECT["Collect results\nlog warnings for failed futures\nreturn concat(successful chunks)"]
-
-    REQ --> Pool
-    F1 & F2 & F3 & F4 & F5 --> COLLECT
-```
-
-Per-future exception handling means one failed chunk cannot kill the whole operation.
+`POST /historical {symbol}` returns **all** historical data for a symbol in one response — PSX ignores date params server-side. The scraper POSTs once and filters to `[start, end]` in memory. No chunking or concurrent fetching is needed.
 
 ---
 
@@ -178,10 +159,10 @@ Every scraper inherits from `BaseScraper`. Provides:
 - Persistent `requests.Session` with headers: `User-Agent`, `Accept`, `Accept-Language`, `Referer`, `X-Requested-With`
 - Exponential backoff retry: 3 attempts, delays 1s / 2s / 4s
 - Rate limiter: max 2 requests/second
-- Rotating User-Agent headers
 - 30s timeout on every request
 - `logging` at DEBUG level on every meaningful step
-- Playwright browser instance for JS-rendered pages
+
+Playwright is retained for tooling only (endpoint discovery). Scrapers use `_get()` / `_post()` exclusively.
 
 ### Caching (`psxdata/cache/disk_cache.py`)
 
@@ -233,7 +214,7 @@ python-dateutil # Fuzzy date parsing fallback
 tqdm            # Progress bars for concurrent fetches
 diskcache       # Disk-based cache
 pydantic        # Data validation and models
-playwright      # Headless Chromium for JS-rendered endpoints
+playwright      # Dev/tooling only — endpoint discovery (not used by scrapers)
 
 # api extra (pip install psxdata[api])
 fastapi         # REST framework
@@ -268,7 +249,7 @@ mypy            # Type checker
 
 ## Design Decisions & Trade-offs
 
-**Playwright for two endpoints only, not all.** JS rendering launches a Chromium process — expensive. Confining it to `/sector-summary` and `/financial-reports` keeps the common case (historical fetches) fast. Trade-off: two separate fetch paths to maintain.
+**All endpoints via plain HTTP.** Every PSX JS-rendered page has hidden AJAX endpoints returning the same data. This was discovered during migration (see issue #31) and eliminates Playwright as a runtime dependency. Trade-off: if PSX removes AJAX endpoints, Playwright would need to return — `_playwright_page()` is retained for this scenario.
 
 **ThreadPoolExecutor over asyncio.** Simpler error isolation per future; `requests` is synchronous. Trade-off: each worker holds an OS thread; fine at max 5, would need rethinking at 50+.
 
@@ -282,7 +263,7 @@ mypy            # Type checker
 
 ## What to Revisit as the System Grows
 
-1. **Playwright process pool.** Currently a Chromium instance can be created per scraper call. Under concurrent API load this becomes expensive — a shared persistent browser pool would be worth implementing once real traffic appears.
+1. **AJAX endpoint stability.** PSX could remove or restructure AJAX endpoints at any time. The schema diff tool (`python tools/probe_endpoints.py --diff`) should be run on a schedule to detect drift early.
 2. **Cache invalidation for today's data.** The 15-minute TTL is a proxy for "fresh enough." Explicit cache busting keyed to market open/close times would be more accurate.
 3. **Corporate actions adjustment.** The `Adj_Close` formula depends on a PSX corporate actions feed whose reliability is unverified — highest-risk feature of Phase 3 API.
 4. **Distributed rate limiter.** The 2 req/sec limiter is per-process. A multi-worker FastAPI deployment could exceed this by N×. A Redis-backed distributed rate limiter is needed at that scale.

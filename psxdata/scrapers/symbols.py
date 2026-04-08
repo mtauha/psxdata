@@ -54,6 +54,11 @@ class SymbolsScraper(BaseScraper):
             "isGEM": "is_gem",
         }
         df = df.rename(columns=rename_map)
+        # PSX omits boolean flags for instruments where the flag is False;
+        # normalise NaN → False and coerce to bool
+        for bool_col in ("is_etf", "is_debt", "is_gem"):
+            if bool_col in df.columns:
+                df[bool_col] = df[bool_col].fillna(False).astype(bool)
         # Keep only known columns
         cols = [c for c in rename_map.values() if c in df.columns]
         return df[cols]

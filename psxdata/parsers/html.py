@@ -130,7 +130,7 @@ def parse_tables_by_heading(html: str) -> dict[str, list[dict[str, str]]]:
     for i, table in enumerate(tables):
         # Walk backwards through previous siblings to find nearest <h2>
         heading: str | None = None
-        for sibling in table.find_all_previous():
+        for sibling in table.find_previous_siblings():
             if sibling.name == "h2":
                 heading = normalize_column_name(sibling.get_text(strip=True))
                 break

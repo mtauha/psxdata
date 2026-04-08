@@ -1,7 +1,7 @@
 """Unit tests for psxdata/parsers/html.py."""
 import logging
 
-from psxdata.parsers.html import parse_html_table
+from psxdata.parsers.html import parse_html_table, parse_tables_by_heading
 
 
 def _make_table(headers: list[str], rows: list[list[str]]) -> str:
@@ -97,9 +97,6 @@ def _make_headed_page(sections: list[tuple[str, list[str], list[list[str]]]]) ->
             f"<table><thead><tr>{th_row}</tr></thead><tbody>{tr_rows}</tbody></table>"
         )
     return "<html><body>" + "".join(parts) + "</body></html>"
-
-
-from psxdata.parsers.html import parse_html_table, parse_tables_by_heading
 
 
 class TestParseTablesByHeading:

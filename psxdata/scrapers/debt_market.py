@@ -4,8 +4,9 @@ Endpoint:  GET https://dps.psx.com.pk/debt-market
 Method:    GET
 Mode:      requests + BeautifulSoup (plain HTTP)
 
-Returns 4 instrument category tables, separated by <h2> headings on the page.
-Tables are parsed by heading, not by table index position.
+Returns 4 instrument category tables keyed as table_0 through table_3.
+The live /debt-market page has no <h2> headings before its data tables,
+so parse_tables_by_heading() uses fallback index keys.
 """
 from __future__ import annotations
 
@@ -28,8 +29,8 @@ class DebtMarketScraper(BaseScraper):
 
         Returns:
             Dict mapping normalized category name -> DataFrame.
-            4 categories: one per <h2> heading on the /debt-market page.
-            Keys are normalized heading text (snake_case).
+            4 categories keyed as table_0 through table_3 (the /debt-market page has no
+            <h2> headings before its data tables; fallback index keys are used).
             Empty dict if no tables found.
 
         Raises:

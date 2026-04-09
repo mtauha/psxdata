@@ -4,8 +4,10 @@ Endpoint:  GET https://dps.psx.com.pk/eligible-scrips
 Method:    GET
 Mode:      requests + BeautifulSoup (plain HTTP)
 
-Returns 9 market category tables, separated by <h2> headings on the page.
-Tables are parsed by heading, not by table index position.
+Returns 9 market category tables keyed as table_0 through table_8.
+The live /eligible-scrips page has <h2> headings, but they are not direct
+siblings of the <table> elements, so parse_tables_by_heading() uses fallback
+index keys in practice.
 """
 from __future__ import annotations
 
@@ -27,7 +29,8 @@ class EligibleScripsScraper(BaseScraper):
 
         Returns:
             Dict mapping normalized category name -> DataFrame.
-            9 categories: one per <h2> heading on the /eligible-scrips page.
+            9 categories keyed as table_0 through table_8 (see module docstring for why
+            fallback keys are used instead of heading-based keys).
             Each DataFrame has columns: symbol, name.
             Empty dict if no tables found.
 

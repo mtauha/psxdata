@@ -96,6 +96,8 @@ COLUMN_MAP: dict[str, str] = {
     "% Change": "change_pct",
     "SYMBOL": "symbol",
     "NAME": "name",
+    "Symbol": "symbol",
+    "Name": "name",
     "SECTOR": "sector",
     "LISTED IN": "listed_in",
     "MARKET CAP.": "market_cap",

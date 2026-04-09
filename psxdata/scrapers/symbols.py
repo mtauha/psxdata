@@ -39,7 +39,9 @@ class SymbolsScraper(BaseScraper):
 
         if not data:
             logger.warning("Symbols endpoint returned empty list")
-            return pd.DataFrame(columns=["symbol", "name", "sector_name", "is_etf", "is_debt", "is_gem"])
+            return pd.DataFrame(
+                columns=["symbol", "name", "sector_name", "is_etf", "is_debt", "is_gem"]
+            )
 
         df = pd.DataFrame(data)
         logger.debug("Fetched %d symbols", len(df))

@@ -1,16 +1,16 @@
 """psxdata — Python library for Pakistan Stock Exchange data."""
-from psxdata.scrapers.base import BaseScraper
 from psxdata.client import (
     PSXClient,
-    stocks,
-    tickers,
-    quote,
-    indices,
-    sectors,
-    fundamentals,
     debt_market,
     eligible_scrips,
+    fundamentals,
+    indices,
+    quote,
+    sectors,
+    stocks,
+    tickers,
 )
+from psxdata.scrapers.base import BaseScraper
 
 __version__ = "0.1.0"
 

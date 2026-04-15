@@ -7,12 +7,20 @@ import pandas as pd
 import pytest
 
 from psxdata.client import PSXClient
-from psxdata.constants import CACHE_TTL_TODAY
+
+# Fixed "today" used throughout — avoids flakiness around midnight.
+FIXED_TODAY = pd.Timestamp("2024-06-15")
 
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def freeze_today(monkeypatch):
+    """Patch psxdata.client._today() to return FIXED_TODAY for all tests."""
+    monkeypatch.setattr("psxdata.client._today", lambda: FIXED_TODAY)
+
 
 @pytest.fixture
 def client(tmp_path):
@@ -31,7 +39,7 @@ def client(tmp_path):
 
 @pytest.fixture
 def today():
-    return pd.Timestamp.today().normalize()
+    return FIXED_TODAY
 
 
 @pytest.fixture
@@ -136,7 +144,7 @@ class TestStocks:
         client._historical.fetch.assert_not_called()
         assert len(result) == len(hist_only_df)
 
-    def test_stocks_today_split_cached_separately(self, client, ohlcv_df):
+    def test_stocks_today_split_cached_separately(self, client, ohlcv_df, today):
         """After a cache miss, historical and today rows are stored under separate keys."""
         client._historical.fetch.return_value = ohlcv_df
         client.stocks("ENGRO", cache=True)
@@ -144,10 +152,39 @@ class TestStocks:
         today_cached = client._cache.get("ENGRO_today")
         assert hist_cached is not None, "historical rows should be cached"
         assert today_cached is not None, "today rows should be cached"
-        # Historical rows exclude today; today rows include today
-        today_ts = pd.Timestamp.today().normalize()
-        assert (hist_cached["date"] < today_ts).all()
-        assert (today_cached["date"] >= today_ts).all()
+        assert (hist_cached["date"] < today).all()
+        assert (today_cached["date"] >= today).all()
+
+    def test_stocks_day_boundary_today_cache_covers_past_end(self, client, today):
+        """After day rollover, yesterday's row in {sym}_today is returned for end=yesterday.
+
+        Regression: before the fix, need_today=False caused {sym}_today to be skipped
+        entirely, so the most recent historical row (not yet moved to {sym}_historical)
+        was silently omitted.
+        """
+        yesterday = today - pd.Timedelta(days=1)
+        day_before = today - pd.Timedelta(days=2)
+
+        # Simulate post-rollover state: historical only has data up to day_before;
+        # yesterday's row is still in the today cache (not yet expired).
+        hist_df = pd.DataFrame({
+            "date": [day_before],
+            "open": [100.0], "high": [105.0], "low": [98.0], "close": [103.0],
+            "volume": pd.array([10000], dtype="Int64"), "is_anomaly": [False],
+        })
+        today_df = pd.DataFrame({
+            "date": [yesterday],
+            "open": [101.0], "high": [106.0], "low": [99.0], "close": [104.0],
+            "volume": pd.array([11000], dtype="Int64"), "is_anomaly": [False],
+        })
+        client._cache.set("ENGRO_historical", hist_df, ttl=None)
+        client._cache.set("ENGRO_today", today_df, ttl=900)
+
+        result = client.stocks("ENGRO", end=yesterday.date(), cache=True)
+
+        client._historical.fetch.assert_not_called()
+        assert len(result) == 2
+        assert yesterday in result["date"].values
 
     def test_stocks_cache_false_bypasses_cache(self, client, ohlcv_df):
         """cache=False always calls the scraper regardless of what is in cache."""

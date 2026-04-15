@@ -27,6 +27,11 @@ from psxdata.scrapers.symbols import SymbolsScraper
 logger = logging.getLogger(__name__)
 
 
+def _today() -> pd.Timestamp:
+    """Return today's date as a normalized Timestamp. Extracted for testability."""
+    return pd.Timestamp.today().normalize()
+
+
 class PSXClient:
     """Public Python API for Pakistan Stock Exchange data.
 
@@ -89,7 +94,7 @@ class PSXClient:
             PSXServerError: 5xx after retries.
         """
         sym = symbol.upper()
-        today = pd.Timestamp.today().normalize()
+        today = _today()
 
         start_ts = pd.Timestamp(start) if start is not None else None
         end_ts = pd.Timestamp(end) if end is not None else today
@@ -103,14 +108,32 @@ class PSXClient:
 
         if cache:
             hist_cached = self._cache.get(hist_key)
-            today_cached = self._cache.get(today_key) if need_today else None
+            # Always check — today cache may cover past dates after a day rollover.
+            today_cached = self._cache.get(today_key)
 
-            if hist_cached is not None and (not need_today or today_cached is not None):
-                parts = [hist_cached]
-                if need_today and today_cached is not None:
-                    parts.append(today_cached)
-                df = pd.concat(parts, ignore_index=True)
-                return self._filter_date_range(df, start_ts, end_ts)
+            if hist_cached is not None:
+                # Include any today-cache rows that fall on or before end_ts.
+                # This handles the day-boundary case: after rollover, yesterday's
+                # row may still be in {sym}_today but not yet in {sym}_historical.
+                today_relevant = pd.DataFrame()
+                if today_cached is not None and not today_cached.empty:
+                    today_relevant = today_cached[today_cached["date"] <= end_ts].copy()
+
+                hist_max = hist_cached["date"].max() if not hist_cached.empty else None
+                today_max = today_relevant["date"].max() if not today_relevant.empty else None
+
+                covered = (
+                    (hist_max is not None and hist_max >= end_ts)
+                    or (today_max is not None and today_max >= end_ts)
+                    or (need_today and today_cached is not None)
+                )
+
+                if covered:
+                    parts = [hist_cached]
+                    if not today_relevant.empty:
+                        parts.append(today_relevant)
+                    df = pd.concat(parts, ignore_index=True)
+                    return self._filter_date_range(df, start_ts, end_ts)
 
         logger.debug("Fetching historical data for %s from PSX", sym)
         raw = self._historical.fetch(sym, start=None, end=None)

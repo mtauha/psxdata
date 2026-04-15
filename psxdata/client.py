@@ -320,13 +320,8 @@ class PSXClient:
         tables, so heading-based keys are not available). These key names are
         load-bearing: do not change them.
 
-        Disk caching for ``dict[str, DataFrame]`` values is deferred — see
-        issue #60. The ``cache`` parameter is accepted for API consistency
-        (project-wide policy: cache always-on, opt-out via ``cache=False``)
-        but is currently a no-op.
-
         Args:
-            cache: Accepted for API consistency; currently a no-op. See #60.
+            cache: If ``False``, bypass cache and always fetch from PSX.
 
         Returns:
             ``dict`` mapping ``table_0``..``table_3`` → DataFrame.
@@ -336,8 +331,18 @@ class PSXClient:
             PSXConnectionError: Network failure after retries.
             PSXServerError: 5xx after retries.
         """
+        cache_key = "debt_market_all"
+
+        if cache:
+            cached = self._cache.get_dict(cache_key)
+            if cached is not None:
+                return cached
+
         logger.debug("Fetching debt market data from PSX")
-        return self._debt_market.fetch()
+        data = self._debt_market.fetch()
+        if cache and data:
+            self._cache.set_dict(cache_key, data, ttl=CACHE_TTL_TODAY)
+        return data
 
     def eligible_scrips(self, cache: bool = True) -> dict[str, pd.DataFrame]:
         """Fetch all PSX margin-trading eligible scrip tables.
@@ -347,13 +352,8 @@ class PSXClient:
         siblings of ``<table>`` elements, so heading-based keys are not
         available). These key names are load-bearing: do not change them.
 
-        Disk caching for ``dict[str, DataFrame]`` values is deferred — see
-        issue #60. The ``cache`` parameter is accepted for API consistency
-        (project-wide policy: cache always-on, opt-out via ``cache=False``)
-        but is currently a no-op.
-
         Args:
-            cache: Accepted for API consistency; currently a no-op. See #60.
+            cache: If ``False``, bypass cache and always fetch from PSX.
 
         Returns:
             ``dict`` mapping ``table_0``..``table_8`` → DataFrame.
@@ -363,8 +363,18 @@ class PSXClient:
             PSXConnectionError: Network failure after retries.
             PSXServerError: 5xx after retries.
         """
+        cache_key = "eligible_scrips_all"
+
+        if cache:
+            cached = self._cache.get_dict(cache_key)
+            if cached is not None:
+                return cached
+
         logger.debug("Fetching eligible scrips from PSX")
-        return self._eligible_scrips.fetch()
+        data = self._eligible_scrips.fetch()
+        if cache and data:
+            self._cache.set_dict(cache_key, data, ttl=CACHE_TTL_TODAY)
+        return data
 
     # ------------------------------------------------------------------
     # Private helpers

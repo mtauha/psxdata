@@ -316,16 +316,33 @@ class TestFundamentals:
 # ---------------------------------------------------------------------------
 
 class TestDebtMarket:
-    def test_debt_market_returns_dict(self, client):
-        """debt_market() passes through the scraper result; cache flag is a no-op."""
-        mock_tables = {
+    @pytest.fixture
+    def mock_tables(self):
+        return {
             "table_0": pd.DataFrame({"security_name": ["Bond A"]}),
             "table_1": pd.DataFrame({"security_name": ["Bond B"]}),
         }
+
+    def test_debt_market_returns_dict(self, client, mock_tables):
+        """On cache miss the scraper is called and the result is returned."""
         client._debt_market.fetch.return_value = mock_tables
         result = client.debt_market(cache=True)
         client._debt_market.fetch.assert_called_once()
         assert set(result.keys()) == {"table_0", "table_1"}
+
+    def test_debt_market_cache_hit_skips_scraper(self, client, mock_tables):
+        """Second call with cache=True reuses cached result without fetching."""
+        client._debt_market.fetch.return_value = mock_tables
+        client.debt_market(cache=True)
+        client.debt_market(cache=True)
+        client._debt_market.fetch.assert_called_once()
+
+    def test_debt_market_cache_false_bypasses(self, client, mock_tables):
+        """cache=False always calls the scraper regardless of cache state."""
+        client._debt_market.fetch.return_value = mock_tables
+        client.debt_market(cache=True)
+        client.debt_market(cache=False)
+        assert client._debt_market.fetch.call_count == 2
 
 
 # ---------------------------------------------------------------------------
@@ -333,13 +350,30 @@ class TestDebtMarket:
 # ---------------------------------------------------------------------------
 
 class TestEligibleScrips:
-    def test_eligible_scrips_returns_dict(self, client):
-        """eligible_scrips() passes through the scraper result; cache flag is a no-op."""
-        mock_tables = {
+    @pytest.fixture
+    def mock_tables(self):
+        return {
             f"table_{i}": pd.DataFrame({"symbol": [f"SYM{i}"]})
             for i in range(9)
         }
+
+    def test_eligible_scrips_returns_dict(self, client, mock_tables):
+        """On cache miss the scraper is called and the result is returned."""
         client._eligible_scrips.fetch.return_value = mock_tables
         result = client.eligible_scrips(cache=True)
         client._eligible_scrips.fetch.assert_called_once()
         assert set(result.keys()) == {f"table_{i}" for i in range(9)}
+
+    def test_eligible_scrips_cache_hit_skips_scraper(self, client, mock_tables):
+        """Second call with cache=True reuses cached result without fetching."""
+        client._eligible_scrips.fetch.return_value = mock_tables
+        client.eligible_scrips(cache=True)
+        client.eligible_scrips(cache=True)
+        client._eligible_scrips.fetch.assert_called_once()
+
+    def test_eligible_scrips_cache_false_bypasses(self, client, mock_tables):
+        """cache=False always calls the scraper regardless of cache state."""
+        client._eligible_scrips.fetch.return_value = mock_tables
+        client.eligible_scrips(cache=True)
+        client.eligible_scrips(cache=False)
+        assert client._eligible_scrips.fetch.call_count == 2

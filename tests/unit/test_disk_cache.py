@@ -70,6 +70,40 @@ class TestDiskCacheTTL:
         assert cache.get("TODAY") is None
 
 
+class TestDiskCacheDict:
+    @pytest.fixture
+    def tables(self):
+        return {
+            "table_0": pd.DataFrame({"security_name": ["Bond A"], "value": [1.0]}),
+            "table_1": pd.DataFrame({"security_name": ["Bond B"], "value": [2.0]}),
+        }
+
+    def test_dict_miss_returns_none(self, cache):
+        assert cache.get_dict("debt_market_all") is None
+
+    def test_dict_write_then_read(self, cache, tables):
+        cache.set_dict("debt_market_all", tables)
+        result = cache.get_dict("debt_market_all")
+        assert result is not None
+        assert set(result.keys()) == {"table_0", "table_1"}
+        pd.testing.assert_frame_equal(result["table_0"], tables["table_0"])
+        pd.testing.assert_frame_equal(result["table_1"], tables["table_1"])
+
+    def test_dict_partial_hit_returns_none(self, cache, tables):
+        """If any table entry expires, get_dict returns None (full miss)."""
+        cache.set_dict("partial_key", tables, ttl=1)
+        assert cache.get_dict("partial_key") is not None
+        # Manually delete one table entry to simulate partial expiry
+        cache.delete("partial_key__table_1")
+        assert cache.get_dict("partial_key") is None
+
+    def test_dict_ttl_expires(self, cache, tables):
+        cache.set_dict("ttl_key", tables, ttl=1)
+        assert cache.get_dict("ttl_key") is not None
+        time.sleep(1.1)
+        assert cache.get_dict("ttl_key") is None
+
+
 class TestDiskCacheKeyConvention:
     def test_standard_key_format(self, cache, sample_df):
         """Demonstrate the standard caller key convention."""

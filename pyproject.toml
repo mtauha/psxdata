@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "psxdata"
-version = "0.1.0"
+version = "0.1.0a1"
 description = "Python library and REST API for Pakistan Stock Exchange (PSX) data"
 readme = "README.md"
 requires-python = ">=3.11"
 keywords = ["psx", "pakistan", "stock", "market", "finance", "data"]
+license = {file = "LICENSE.md"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -17,6 +18,10 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "requests>=2.28",
@@ -29,7 +34,6 @@ dependencies = [
     "tqdm>=4.64",
     "diskcache>=5.4",
     "pydantic>=2.0",
-    "playwright>=1.40",
 ]
 
 [project.optional-dependencies]
@@ -51,9 +55,14 @@ dev = [
     "types-python-dateutil>=2.8",
 ]
 
+[project.urls]
+Homepage = "https://github.com/mtauha/psxdata"
+Source = "https://github.com/mtauha/psxdata"
+"Bug Tracker" = "https://github.com/mtauha/psxdata/issues"
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["psxdata*", "api*"]
+include = ["psxdata*"]
 
 [tool.pytest.ini_options]
 markers = [

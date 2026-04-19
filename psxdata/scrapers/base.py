@@ -15,6 +15,7 @@ import time
 from typing import Any
 
 import requests
+
 from psxdata.constants import (
     BASE_URL,
     ENDPOINTS,

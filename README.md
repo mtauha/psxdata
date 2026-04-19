@@ -1,57 +1,85 @@
 # psxdata
 
 [![CI](https://github.com/mtauha/psxdata/actions/workflows/ci.yml/badge.svg)](https://github.com/mtauha/psxdata/actions/workflows/ci.yml)
-![PyPI](https://img.shields.io/badge/pypi-not%20yet%20published-lightgrey)
-![Status](https://img.shields.io/badge/status-in%20development-orange)
+[![PyPI](https://img.shields.io/pypi/v/psxdata)](https://pypi.org/project/psxdata/)
+[![Python](https://img.shields.io/pypi/pyversions/psxdata)](https://pypi.org/project/psxdata/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> **⚠ This package is under active development and is not yet usable.**
-> No PyPI release exists. The library, scrapers, and REST API are being built in phases — see the [development roadmap](https://github.com/mtauha/psxdata/issues/4) for current status.
+**Python library for Pakistan Stock Exchange (PSX) data** — resilient to PSX's frequent HTML changes, with a disk cache, exponential backoff retries, and a clean public API.
 
-**Python library and REST API for Pakistan Stock Exchange (PSX) data** — being built from scratch to be resilient to PSX's frequent HTML changes.
+> **Alpha release (`0.1.0a1`):** Core scraping, caching, and public API are complete. The FastAPI REST layer and full documentation are in progress.
+
+---
+
+## Installation
+
+```bash
+pip install psxdata
+```
+
+Requires Python 3.11+.
+
+---
+
+## Quick Start
+
+```python
+import psxdata
+
+# Historical OHLCV data
+df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
+
+# All listed tickers
+all_tickers = psxdata.tickers()
+
+# KSE-100 index constituents
+kse100 = psxdata.indices("KSE100")
+
+# Live quote
+q = psxdata.quote("LUCK")
+
+# Sector summary
+sectors = psxdata.sectors()
+
+# Debt market instruments
+debt = psxdata.debt_market()
+
+# Margin-eligible stocks
+scrips = psxdata.eligible_scrips()
+```
+
+---
+
+## API Reference
+
+| Function | Description |
+|---|---|
+| `psxdata.stocks(symbol, start, end)` | Historical OHLCV DataFrame for a ticker |
+| `psxdata.tickers()` | All listed tickers (1000+) |
+| `psxdata.quote(symbol)` | Live quote row for a ticker |
+| `psxdata.indices(name)` | Constituents of a named index (e.g. `"KSE100"`) |
+| `psxdata.sectors()` | Sector aggregates DataFrame (37 sectors) |
+| `psxdata.fundamentals(symbol)` | Financial reports for a ticker |
+| `psxdata.debt_market()` | Debt market instruments (TFCs, Sukuks, etc.) |
+| `psxdata.eligible_scrips()` | Margin trading eligible stocks |
 
 ---
 
 ## Why psxdata
 
-The existing [`psx-data-reader`](https://github.com/FarhanZizvi/psx-data-reader) library hardcodes date formats and column positions that break silently when PSX changes its HTML. `psxdata` is designed differently: dynamic column extraction from `<th>` tags, multi-format date parsing with fuzzy fallback, exponential backoff retries, and a disk cache that keeps historical data forever.
+The existing [`psx-data-reader`](https://github.com/FarhanZizvi/psx-data-reader) library hardcodes date formats and column positions that break silently when PSX changes its HTML. `psxdata` is designed differently:
 
----
-
-## Planned API
-
-> These signatures are the target interface. They do not work yet — implementation starts in Phase 2.
-
-```python
-import psxdata
-
-# Historical OHLCV data for ENGRO
-df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
-
-# All listed tickers
-tickers = psxdata.tickers()
-
-# KSE-100 constituents only
-kse100 = psxdata.tickers(index="KSE-100")
-
-# Current index values
-indices = psxdata.indices()
-```
-
-| Function | Description |
-|---|---|
-| `psxdata.stocks(symbol, start, end)` | Historical OHLCV DataFrame for one or more tickers |
-| `psxdata.tickers(index=None)` | All listed tickers, optionally filtered by index |
-| `psxdata.indices()` | Current index values (KSE-100, KSE-30, KMI-30) |
-| `psxdata.sectors()` | Sector aggregates DataFrame |
-| `psxdata.fundamentals(symbol)` | P/E ratio, EPS, book value for a ticker |
-| `psxdata.market.debt()` | Debt market instruments (TFCs, Sukuks) |
-| `psxdata.market.eligible_scrips()` | Margin trading eligible stocks |
+- **Dynamic column extraction** from `<th>` tags — survives column reordering
+- **Multi-format date parsing** with fuzzy fallback via `dateutil`
+- **Exponential backoff retries** — 3 attempts, 1s/2s delays
+- **Disk cache** (`~/.psxdata/cache/`) — historical data cached forever, live data for 15 min
+- **Data validation** — OHLC constraint checks, duplicate/future date detection
 
 ---
 
 ## Planned REST API
 
-> The FastAPI layer is planned for Phase 4 and does not exist yet.
+> The FastAPI layer is planned for Phase 4.
 
 | Endpoint | Description |
 |---|---|
@@ -60,34 +88,34 @@ indices = psxdata.indices()
 | `GET /stocks/{symbol}/historical?start=&end=` | Historical OHLCV |
 | `GET /stocks/{symbol}/quote` | Real-time quote |
 | `GET /stocks/{symbol}/fundamentals` | Fundamentals |
-| `GET /indices` | Index values |
+| `GET /indices/{name}` | Index constituents |
 | `GET /sectors` | Sector aggregates |
 | `GET /debt-market` | Debt instruments |
 | `GET /eligible-scrips` | Margin eligible stocks |
 
-All responses will follow: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}`
+All responses: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}`
 
 ---
 
 ## Development Status
 
-See the [roadmap issue](https://github.com/mtauha/psxdata/issues/4) for the full phase breakdown. Current state:
+See the [roadmap issue](https://github.com/mtauha/psxdata/issues/4) for the full phase breakdown.
 
 - ✅ Phase 0 — PSX endpoint research and HTML fixture capture
 - ✅ Phase 0.5 — Repository setup, CI/CD, community files
-- 🔲 Phase 2 — Core engineering (BaseScraper, parsers, cache, utils)
-- 🔲 Phase 3 — Scrapers
-- 🔲 Phase 3 API — Public Python package interface
+- ✅ Phase 2 — Core engineering (BaseScraper, parsers, cache, utils)
+- ✅ Phase 3 — Scrapers (historical, real-time, indices, sectors, fundamentals, screener, debt, eligible scrips)
+- ✅ Phase 3 API — Public Python package interface
 - 🔲 Phase 4 — FastAPI REST layer
-- 🔲 Phase 5 — Full test suite
-- 🔲 Phase 6 — Packaging & PyPI publish
+- ✅ Phase 5 — Full test suite
+- ✅ Phase 6 — Packaging & PyPI publish
 - 🔲 Phase 7 — Documentation
 
 ---
 
 ## Contributing
 
-Contributions are welcome once Phase 2 is underway. See [CONTRIBUTING.md](CONTRIBUTING.md) and open an issue before starting non-trivial work.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and open an issue before starting non-trivial work.
 
 ---
 

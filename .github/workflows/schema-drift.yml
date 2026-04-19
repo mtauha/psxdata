@@ -5,10 +5,14 @@ on:
     - cron: "0 6 * * 1"  # Every Monday 6am UTC
   workflow_dispatch:       # Manual trigger
 
+permissions: {}
+
 jobs:
   drift-check:
     name: Probe PSX endpoints for schema drift
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 

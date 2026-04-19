@@ -16,13 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Check tag matches pyproject.toml version
         run: |
-          PKG_VERSION=$(python3 -c "
-import tomllib
-with open('pyproject.toml', 'rb') as f:
-    print(tomllib.load(f)['project']['version'])
-")
+          PKG_VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           echo "Package version: $PKG_VERSION"
           echo "Tag version:     $TAG_VERSION"
@@ -98,6 +99,7 @@ with open('pyproject.toml', 'rb') as f:
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     environment:
       name: testpypi
@@ -119,6 +121,7 @@ with open('pyproject.toml', 'rb') as f:
     needs: publish-testpypi
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       id-token: write
     environment:
       name: pypi

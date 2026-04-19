@@ -4,10 +4,7 @@ Scraping mode:
   - requests + BeautifulSoup: via _get() / _post()
 
 All PSX endpoints are accessible via plain HTTP requests to AJAX endpoints.
-Playwright is no longer needed for scraping (see issue #31).
-
-The _playwright_page() method is retained for tooling (e.g. endpoint discovery)
-but is deprecated for scraper use.
+Playwright is not used — all scrapers use requests only.
 
 All Phase 3 scrapers inherit from BaseScraper.
 """
@@ -15,13 +12,9 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Generator
-from contextlib import contextmanager
 from typing import Any
 
 import requests
-from playwright.sync_api import Page, sync_playwright
-
 from psxdata.constants import (
     BASE_URL,
     ENDPOINTS,
@@ -51,10 +44,6 @@ class BaseScraper:
     - Exponential backoff retry (MAX_RETRIES attempts, RETRY_DELAYS seconds)
     - Thread-safe rate limiter (MAX_REQUESTS_PER_SECOND)
 
-    Note:
-        Playwright support is deprecated for scraper use. All PSX endpoints
-        are accessible via plain HTTP AJAX requests. _playwright_page() is
-        retained only for tooling (AJAX endpoint discovery). See issue #31.
     """
 
     def __init__(self) -> None:
@@ -147,26 +136,4 @@ class BaseScraper:
         """POST request to a named PSX endpoint."""
         return self._request("POST", self._build_url(endpoint), data=data, **kwargs)
 
-    @contextmanager
-    def _playwright_page(self) -> Generator[Page, None, None]:
-        """Context manager providing a Playwright Page.
 
-        .. deprecated::
-            All PSX endpoints now have plain HTTP AJAX equivalents.
-            Scrapers should use _get() / _post() instead. This method
-            is retained only for tooling (e.g. AJAX endpoint discovery).
-            See issue #31 for details.
-
-        Usage::
-
-            with self._playwright_page() as page:
-                page.goto(url, wait_until="networkidle")
-                html = page.content()
-        """
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page(extra_http_headers=REQUEST_HEADERS)
-            try:
-                yield page
-            finally:
-                browser.close()

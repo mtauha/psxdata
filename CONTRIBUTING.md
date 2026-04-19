@@ -15,7 +15,6 @@ source .venv/bin/activate       # Linux/Mac
 .venv\Scripts\activate          # Windows
 
 pip install -e ".[dev]"
-playwright install chromium     # Required for JS-rendered PSX pages
 ```
 
 Verify your setup:

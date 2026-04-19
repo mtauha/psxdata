@@ -1,4 +1,5 @@
 name: Publish to PyPI
+run-name: "Publish ${{ github.ref_name }} to PyPI"
 
 on:
   push:

@@ -11,7 +11,7 @@ from psxdata.scrapers.historical import HistoricalScraper
 
 pytestmark = pytest.mark.reliability
 
-FIXTURE = (Path(__file__).parent.parent / "fixtures" / "historical_ENGRO.html").read_text(encoding="utf-8")
+FIXTURE = (Path(__file__).parent.parent / "fixtures" / "historical_engro.html").read_text(encoding="utf-8")
 
 
 def _mock_response(text: str, status_code: int = 200) -> MagicMock:

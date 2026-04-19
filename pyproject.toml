@@ -8,7 +8,7 @@ version = "0.1.0a1"
 description = "Python library and REST API for Pakistan Stock Exchange (PSX) data"
 readme = "README.md"
 requires-python = ">=3.11"
-keywords = ["psx", "pakistan", "stock", "market", "finance", "data"]
+keywords = ["psx", "pakistan", "stock", "market", "finance", "data", "kse", "kse-100", "karachi", "stock-exchange", "ohlcv", "historical-data"]
 license = {file = "LICENSE.md"}
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -59,6 +59,7 @@ dev = [
 Homepage = "https://github.com/mtauha/psxdata"
 Source = "https://github.com/mtauha/psxdata"
 "Bug Tracker" = "https://github.com/mtauha/psxdata/issues"
+Changelog = "https://github.com/mtauha/psxdata/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]

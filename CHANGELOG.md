@@ -24,11 +24,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 2: Added `psxdata/cache/disk_cache.py` — `DiskCache` backed by `diskcache` + parquet; historical data never expires, today's data expires after 15 minutes.
 - Phase 2: Added `psxdata/models/schemas.py` — 7 thin Pydantic v2 models: `OHLCVRow`, `Quote`, `IndexRecord`, `SectorSummary`, `TickerInfo`, `DebtInstrument`, `EligibleScrip`.
 - Phase 2: Added `psxdata/scrapers/base.py` — `BaseScraper` with persistent session, exponential backoff retry, rate limiter, and Playwright context manager.
+- Phase 3: Added scrapers for all 8 PSX endpoints — `historical.py` (POST, all-time OHLCV), `realtime.py` (15 trading-board combos), `indices.py` (18 indices), `sectors.py` (37 sectors), `fundamentals.py` (financial reports), `screener.py` (1000+ tickers with fundamentals), `debt_market.py` (4 instrument tables), `eligible_scrips.py` (9 category tables).
+- Phase 3: Deprecated Playwright for scraping — all endpoints confirmed accessible via plain `requests`+BeautifulSoup. `_playwright_page()` retained in `BaseScraper` for tooling only.
+- Phase 3 API: Added public package interface — `stocks()`, `tickers()`, `quote()`, `indices()`, `sectors()`, `fundamentals()`, `debt_market()`, `eligible_scrips()` exported from `psxdata/__init__.py`.
+- Phase 5: Added full unit test suite — 80+ tests covering parsers, validators, cache, utils, and scraper reliability (mocked failure modes).
+- Phase 5: Added integration test suite — real PSX endpoint tests for all 8 scrapers, marked `@pytest.mark.integration`.
+- Phase 5: Added `tests/fixtures/` — static HTML/JSON snapshots for deterministic unit tests.
+- Phase 6: Published to PyPI as `psxdata==0.1.0a1`.
+- Phase 6: Added 5-job gated publish pipeline (`.github/workflows/publish.yml`) — tag verification → unit tests → build+twine check → TestPyPI → PyPI (manual approval gate).
+- Phase 6: Removed `playwright` from core dependencies — optional tooling only.
 
 ### Changed
 
 - Corrected `ARCHITECTURE.md` scraper→endpoint map: `/screener` and `/trading-panel` use `requests`+BeautifulSoup; `/sector-summary` and `/financial-reports` use Playwright.
+- `CHANGELOG.md`: Added entries for Phases 3 through 6.
 
 ---
 
-[Unreleased]: https://github.com/mtauha/psxdata/commits/main
+## [0.1.0a1] — 2026-04-19
+
+First PyPI release. Core scraping library complete for all 8 PSX endpoints with caching, validation, and a clean public Python API.
+
+---
+
+[Unreleased]: https://github.com/mtauha/psxdata/compare/v0.1.0a1...HEAD
+[0.1.0a1]: https://github.com/mtauha/psxdata/releases/tag/v0.1.0a1

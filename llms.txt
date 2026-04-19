@@ -1,0 +1,69 @@
+# psxdata
+
+> psxdata is a Python library for downloading Pakistan Stock Exchange (PSX) data.
+> It provides historical OHLCV prices, real-time quotes, KSE-100 index constituents,
+> sector summaries (37 sectors), fundamentals, debt market instruments (TFCs, Sukuks),
+> and margin-eligible stocks. Free, open-source (MIT), and actively maintained.
+
+## Install
+
+```
+pip install psxdata
+```
+
+Requires Python 3.11+
+
+## Docs
+
+- [README](https://github.com/mtauha/psxdata/blob/main/README.md)
+- [Architecture](https://github.com/mtauha/psxdata/blob/main/ARCHITECTURE.md)
+- [Changelog](https://github.com/mtauha/psxdata/blob/main/CHANGELOG.md)
+- [Contributing](https://github.com/mtauha/psxdata/blob/main/CONTRIBUTING.md)
+- [Roadmap](https://github.com/mtauha/psxdata/blob/main/ROADMAP.md)
+- [PyPI](https://pypi.org/project/psxdata/)
+
+## Public API
+
+- `psxdata.stocks(symbol, start, end)` — Historical OHLCV DataFrame for a PSX ticker
+- `psxdata.tickers()` — All 1000+ listed PSX tickers
+- `psxdata.quote(symbol)` — Live quote (price, volume, sector, market cap)
+- `psxdata.indices(name)` — Constituents of a named index (KSE100, KSE30, KMI30, and 15 others)
+- `psxdata.sectors()` — Sector aggregates for all 37 PSX sectors
+- `psxdata.fundamentals(symbol)` — Financial reports (P/E, EPS, book value)
+- `psxdata.debt_market()` — Debt instruments: TFCs, Sukuks, and other categories
+- `psxdata.eligible_scrips()` — Margin trading eligible stocks by category
+
+## Key Design Decisions
+
+- Dynamic column extraction from `<th>` tags — survives PSX HTML changes
+- Multi-format date parsing with fuzzy fallback (never raises on bad input)
+- Exponential backoff retry: 3 attempts, 1s/2s delays, 30s timeout
+- Disk cache at `~/.psxdata/cache/` using diskcache + parquet format
+  - Historical data: never expires
+  - Live/today data: 15-minute TTL
+- OHLC validation: flags constraint violations, duplicates, future dates
+- All scrapers use `requests` + BeautifulSoup — no browser automation required
+
+## PSX Endpoints Covered
+
+- `POST /historical` — All-time OHLCV for any symbol
+- `GET /trading-board/{market}/{board}` — Real-time trading board (15 combos)
+- `GET /indices/{name}` — Index constituents (18 indices)
+- `GET /sector-summary/sectorwise` — Sector aggregates
+- `GET /financial-reports-list` — Fundamentals
+- `GET /screener` — Full market screener
+- `GET /debt-market` — Debt instruments (4 tables)
+- `GET /eligible-scrips` — Margin eligible stocks (9 tables)
+- `GET /symbols` — All listed symbols with metadata
+
+## REST API (Planned — Phase 4)
+
+A FastAPI layer is under development. Planned endpoints:
+- `GET /stocks/{symbol}/historical`
+- `GET /stocks/{symbol}/quote`
+- `GET /indices/{name}`
+- `GET /sectors`
+- `GET /debt-market`
+- `GET /eligible-scrips`
+
+All responses: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}`

@@ -1,13 +1,18 @@
-# psxdata
+# psxdata — Python Library for Pakistan Stock Exchange (PSX) Data
 
 [![CI](https://github.com/mtauha/psxdata/actions/workflows/ci.yml/badge.svg)](https://github.com/mtauha/psxdata/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/psxdata)](https://pypi.org/project/psxdata/)
 [![Python](https://img.shields.io/pypi/pyversions/psxdata)](https://pypi.org/project/psxdata/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**Python library for Pakistan Stock Exchange (PSX) data** — resilient to PSX's frequent HTML changes, with a disk cache, exponential backoff retries, and a clean public API.
+**psxdata** is a Python library for downloading Pakistan Stock Exchange (PSX) data — historical OHLCV prices, real-time quotes, KSE-100 index constituents, sector summaries, fundamentals, debt market instruments, and margin-eligible stocks. Free, open-source, and actively maintained.
 
-> **Alpha release (`0.1.0a1`):** Core scraping, caching, and public API are complete. The FastAPI REST layer and full documentation are in progress.
+<details>
+<summary>Alpha release note</summary>
+
+`0.1.0a1` — Core scraping, caching, and public API are complete. The FastAPI REST layer and full documentation are in progress. APIs may change before `1.0`.
+
+</details>
 
 ---
 
@@ -67,7 +72,7 @@ scrips = psxdata.eligible_scrips()
 
 ## Why psxdata
 
-The existing [`psx-data-reader`](https://github.com/FarhanZizvi/psx-data-reader) library hardcodes date formats and column positions that break silently when PSX changes its HTML. `psxdata` is designed differently:
+Existing solutions for PSX data tend to hardcode date formats and column positions that break silently when PSX changes its HTML. `psxdata` is designed differently:
 
 - **Dynamic column extraction** from `<th>` tags — survives column reordering
 - **Multi-format date parsing** with fuzzy fallback via `dateutil`
@@ -107,7 +112,7 @@ See the [roadmap issue](https://github.com/mtauha/psxdata/issues/4) for the full
 - ✅ Phase 3 — Scrapers (historical, real-time, indices, sectors, fundamentals, screener, debt, eligible scrips)
 - ✅ Phase 3 API — Public Python package interface
 - 🔲 Phase 4 — FastAPI REST layer
-- ✅ Phase 5 — Full test suite
+- 🔲 Phase 5 — Full test suite (API layer tests pending)
 - ✅ Phase 6 — Packaging & PyPI publish
 - 🔲 Phase 7 — Documentation
 

@@ -24,6 +24,8 @@ pytest tests/unit/ -v           # Should pass (no network required)
 ruff check psxdata/ api/        # Should return no errors
 ```
 
+> **Important:** The FastAPI app requires an editable install to use package-style imports. Do not add `sys.path` fallbacks in `api/main.py`. The editable install above ensures the `api` module resolves correctly during development.
+
 ---
 
 ## Issue First Policy

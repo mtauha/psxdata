@@ -433,40 +433,205 @@ def stocks(
     end: date | str | None = None,
     cache: bool = True,
 ) -> pd.DataFrame:
-    """Fetch historical OHLCV data. See :class:`PSXClient.stocks` for full docs."""
+    """Fetch historical OHLCV data for a PSX-listed symbol.
+
+    Convenience wrapper around :class:`PSXClient`. Uses a shared lazy client
+    instance — no instantiation needed.
+
+    Args:
+        symbol: PSX ticker, e.g. ``"ENGRO"``.
+        start: Start date (inclusive). ``None`` means earliest available.
+        end: End date (inclusive). ``None`` means today.
+        cache: If ``False``, bypass cache and always fetch from PSX.
+
+    Returns:
+        DataFrame with columns: date, open, high, low, close, volume, is_anomaly.
+        Empty DataFrame if no data is available for the given range.
+
+    Raises:
+        ValueError: If ``start`` is after ``end``.
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+
+    Example::
+
+        import psxdata
+        df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
+        print(df.head())
+    """
     return _client().stocks(symbol, start=start, end=end, cache=cache)
 
 
 def quote(symbol: str, cache: bool = True) -> pd.DataFrame:
-    """Fetch screener snapshot for a symbol. See :class:`PSXClient.quote` for full docs."""
+    """Fetch the latest screener snapshot for a symbol.
+
+    The full screener is fetched once and cached for 15 minutes.
+    Successive calls for different symbols reuse the same cached screener.
+
+    Args:
+        symbol: PSX ticker, e.g. ``"ENGRO"``.
+        cache: If ``False``, bypass cache and always fetch the screener.
+
+    Returns:
+        Single-row DataFrame with screener columns (symbol, sector, ldcp, ...).
+        Empty DataFrame if the symbol is not present in the screener.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+
+    Example::
+
+        import psxdata
+        q = psxdata.quote("ENGRO")
+        print(q.T)
+    """
     return _client().quote(symbol, cache=cache)
 
 
 def tickers(index: str | None = None, cache: bool = True) -> list[str]:
-    """Return ticker symbols. See :class:`PSXClient.tickers` for full docs."""
+    """Return PSX ticker symbols, optionally filtered to an index.
+
+    Args:
+        index: Index name, e.g. ``"KSE100"``. ``None`` returns all listed
+            symbols. See ``psxdata/constants.py`` for valid index names.
+        cache: If ``False``, bypass cache.
+
+    Returns:
+        List of ticker strings, e.g. ``["ENGRO", "LUCK", ...]``.
+        Empty list if no symbols are found.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+        PSXParseError: PSX returned 4xx for the given index name.
+
+    Example::
+
+        import psxdata
+        kse100 = psxdata.tickers(index="KSE100")
+        print(f"KSE-100 has {len(kse100)} stocks")
+    """
     return _client().tickers(index=index, cache=cache)
 
 
 def indices(name: str, cache: bool = True) -> pd.DataFrame:
-    """Fetch index constituents. See :class:`PSXClient.indices` for full docs."""
+    """Fetch constituent data for a PSX index.
+
+    Args:
+        name: Index name, e.g. ``"KSE100"``. See ``psxdata/constants.py``.
+        cache: If ``False``, bypass cache.
+
+    Returns:
+        DataFrame with columns: symbol, current_index, idx_weight,
+        idx_point, market_cap_m, and either freefloat_m or shares_m.
+        Empty DataFrame if PSX returns no data.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+        PSXParseError: PSX returned 4xx for the given index name.
+
+    Example::
+
+        import psxdata
+        df = psxdata.indices("KSE100")
+        print(df.nlargest(10, "idx_weight")[["symbol", "idx_weight"]])
+    """
     return _client().indices(name, cache=cache)
 
 
 def sectors(cache: bool = True) -> pd.DataFrame:
-    """Fetch sector summary. See :class:`PSXClient.sectors` for full docs."""
+    """Fetch the PSX sector summary.
+
+    Args:
+        cache: If ``False``, bypass cache.
+
+    Returns:
+        DataFrame with columns: sector_code, sector_name, advance, decline,
+        unchanged, turnover, market_cap_b.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+
+    Example::
+
+        import psxdata
+        df = psxdata.sectors()
+        print(df.sort_values("market_cap_b", ascending=False).head())
+    """
     return _client().sectors(cache=cache)
 
 
 def fundamentals(symbol: str | None = None, cache: bool = True) -> pd.DataFrame:
-    """Fetch financial reports list. See :class:`PSXClient.fundamentals` for full docs."""
+    """Fetch the PSX financial reports filing list.
+
+    Args:
+        symbol: If provided, return only filings for this ticker.
+        cache: If ``False``, bypass cache.
+
+    Returns:
+        DataFrame with columns: symbol, year, type, period_ended,
+        posting_date, posting_time, document.
+        Empty DataFrame if outside reporting season.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+
+    Example::
+
+        import psxdata
+        df = psxdata.fundamentals("ENGRO")
+        print(df)
+    """
     return _client().fundamentals(symbol=symbol, cache=cache)
 
 
 def debt_market(cache: bool = True) -> dict[str, pd.DataFrame]:
-    """Fetch debt market tables. See :class:`PSXClient.debt_market` for full docs."""
+    """Fetch all PSX debt market instrument tables.
+
+    Args:
+        cache: If ``False``, bypass cache and always fetch from PSX.
+
+    Returns:
+        ``dict`` mapping ``table_0``..``table_3`` to DataFrames.
+        Empty dict if no tables are found.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+
+    Example::
+
+        import psxdata
+        tables = psxdata.debt_market()
+        for key, df in tables.items():
+            print(key, df.shape)
+    """
     return _client().debt_market(cache=cache)
 
 
 def eligible_scrips(cache: bool = True) -> dict[str, pd.DataFrame]:
-    """Fetch eligible scrip tables. See :class:`PSXClient.eligible_scrips` for full docs."""
+    """Fetch all PSX margin-trading eligible scrip tables.
+
+    Args:
+        cache: If ``False``, bypass cache and always fetch from PSX.
+
+    Returns:
+        ``dict`` mapping ``table_0``..``table_8`` to DataFrames.
+        Empty dict if no tables are found.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+
+    Example::
+
+        import psxdata
+        tables = psxdata.eligible_scrips()
+        for key, df in tables.items():
+            print(key, df.shape)
+    """
     return _client().eligible_scrips(cache=cache)

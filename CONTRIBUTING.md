@@ -26,6 +26,18 @@ ruff check psxdata/ api/        # Should return no errors
 
 ---
 
+## Local Development
+
+The FastAPI app expects package-style imports. When working on the REST API layer, ensure the package is installed in editable mode:
+
+```bash
+pip install -e .
+```
+
+**Do not add `sys.path` import fallbacks in `api/main.py`.** The editable install handles module discovery correctly.
+
+---
+
 ## Issue First Policy
 
 Before starting any non-trivial change, open a GitHub issue. This prevents duplicate work and lets maintainers give early feedback on direction. Issues are free — PRs without a linked issue may be closed without review.

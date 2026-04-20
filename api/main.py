@@ -10,9 +10,11 @@ try:
 except ImportError:  # pragma: no cover - direct script execution fallback
     import sys
     from pathlib import Path
-
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from api.routers import router_registry
+
+
+from api.routers import health
 
 
 @asynccontextmanager
@@ -21,6 +23,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="psxdata", lifespan=lifespan)
+
+app.include_router(health.router)
 
 app.add_middleware(
     CORSMiddleware,

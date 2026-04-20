@@ -25,6 +25,12 @@
 pip install psxdata
 ```
 
+For local development (including the FastAPI app), install in editable mode:
+
+```bash
+pip install -e .
+```
+
 Requires Python 3.11+.
 
 ---

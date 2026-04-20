@@ -4,7 +4,7 @@
 
 ## Related Issue
 
-Closes #
+Closes #65
 
 ## Type of Change
 

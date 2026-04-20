@@ -104,7 +104,7 @@ class TestSectorsScraperExpanded:
 
     def test_sector_names_are_strings(self):
         df = SectorsScraper().fetch()
-        assert df["sector_name"].dtype == object
+        assert pd.api.types.is_string_dtype(df["sector_name"]), f"Expected string dtype, got {df['sector_name'].dtype}"
         assert (df["sector_name"].str.len() > 0).all()
 
     def test_returns_sectors(self):

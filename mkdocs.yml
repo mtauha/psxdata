@@ -9,6 +9,7 @@ docs_dir: pages
 
 theme:
   name: material
+  custom_dir: overrides
   features:
     - navigation.tabs
     - content.code.copy

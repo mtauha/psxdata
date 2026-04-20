@@ -113,7 +113,13 @@ jobs:
                   owner: context.repo.owner, repo: context.repo.repo,
                   issue_number: pr.number, name,
                 });
-              } catch (e) { if (e?.status !== 404) throw e; }
+              } catch (e) {
+                if (e?.status === 403) {
+                  core.warning(`403 removing label '${name}' from PR #${pr.number} — skipping`);
+                  return;
+                }
+                if (e?.status !== 404) throw e;
+              }
             }
 
             const REVIEW_LABELS = [

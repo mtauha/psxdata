@@ -16,8 +16,6 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="psxdata", lifespan=lifespan)
 
-app.include_router(health.router)
-
 app.add_middleware(
     CORSMiddleware,
     # TODO: replace wildcard origin with explicit origins before production.
@@ -46,5 +44,4 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 for router in router_registry:
-    # TODO: first router PR should populate router_registry.
     app.include_router(router)

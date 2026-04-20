@@ -1,3 +1,5 @@
-# Intentionally empty in API skeleton; first router PR should append routers here.
 from fastapi import APIRouter
-router_registry: list[APIRouter] = []
+
+from .health import router as health_router
+
+router_registry: list[APIRouter] = [health_router]

@@ -1,7 +1,7 @@
 name: Auto Label PRs
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, edited]
   pull_request_review:
     types: [submitted, dismissed]
@@ -17,7 +17,7 @@ permissions: {}
 jobs:
   # ── PR open / edit / sync / draft toggle ───────────────────────────────────
   label-pr:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request_target'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -128,11 +128,17 @@ jobs:
               review.state === 'changes_requested' ? ['review: changes-requested'] :
                                                      ['review: needs-review'];
 
-            await github.rest.issues.addLabels({
-              owner: context.repo.owner, repo: context.repo.repo,
-              issue_number: pr.number, labels: toAdd,
-            });
-            core.info(`Review '${review.state}' → applied: ${toAdd.join(', ')}`);
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: pr.number, labels: toAdd,
+              });
+              core.info(`Review '${review.state}' → applied: ${toAdd.join(', ')}`);
+            } catch (e) {
+              if (e?.status === 403) {
+                core.warning(`403 adding review labels to PR #${pr.number} — skipping`);
+              } else { throw e; }
+            }
 
   # ── CI checks result (via workflow_run, safe for forks) ────────────────────
   label-checks:
@@ -173,9 +179,15 @@ jobs:
                 });
               } catch (e) { if (e?.status !== 404) throw e; }
 
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner, repo: context.repo.repo,
-                issue_number: pr.number, labels: [label],
-              });
-              core.info(`PR #${pr.number}: CI '${run.conclusion}' → applied '${label}'`);
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner, repo: context.repo.repo,
+                  issue_number: pr.number, labels: [label],
+                });
+                core.info(`PR #${pr.number}: CI '${run.conclusion}' → applied '${label}'`);
+              } catch (e) {
+                if (e?.status === 403) {
+                  core.warning(`403 adding checks label to PR #${pr.number} — skipping`);
+                } else { throw e; }
+              }
             }

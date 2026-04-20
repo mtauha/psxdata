@@ -5,20 +5,12 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-try:
-    from .routers import router_registry
-except ImportError:  # pragma: no cover - direct script execution fallback
-    import sys
-    from pathlib import Path
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from api.routers import router_registry
-
-
-from api.routers import health
+from .routers import router_registry
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # TODO: initialise cache / Redis on startup, close on shutdown.
     yield
 
 
@@ -28,6 +20,7 @@ app.include_router(health.router)
 
 app.add_middleware(
     CORSMiddleware,
+    # TODO: replace wildcard origin with explicit origins before production.
     allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
@@ -53,4 +46,5 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 for router in router_registry:
+    # TODO: first router PR should populate router_registry.
     app.include_router(router)

@@ -5,15 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-try:
-    from .routers import router_registry
-except ImportError:  # pragma: no cover - direct script execution fallback
-    import sys
-    from pathlib import Path
-
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from api.routers import router_registry
-
+from .routers import router_registry
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

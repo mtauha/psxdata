@@ -12,7 +12,7 @@ psxdata returns complete OHLCV history for any PSX-listed stock in a single call
 ```python
 import psxdata
 
-df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
+df = psxdata.stocks("ENGRO", start="2025-01-01", end="2025-12-31")
 print(df.head())
 ```
 
@@ -20,8 +20,8 @@ Output:
 
 ```
         date    open    high     low   close    volume  is_anomaly
-0 2024-01-02  286.90  293.50  285.00  291.00   1234567       False
-1 2024-01-03  291.00  295.00  289.00  293.50    987654       False
+0 2025-01-02  286.90  293.50  285.00  291.00   1234567       False
+1 2025-01-03  291.00  295.00  289.00  293.50    987654       False
 ...
 ```
 
@@ -43,7 +43,7 @@ df = psxdata.stocks("LUCK", start=start, end=end)
 ```python
 import psxdata
 
-df = psxdata.stocks("HBL", start="2023-01-01")
+df = psxdata.stocks("HBL", start="2024-01-01")
 df = df.sort_values("date").reset_index(drop=True)
 
 df["daily_return"] = df["close"].pct_change()
@@ -57,7 +57,7 @@ print(df[["date", "close", "daily_return", "cumulative_return"]].tail())
 ```python
 import psxdata
 
-df = psxdata.stocks("ENGRO", start="2020-01-01")
+df = psxdata.stocks("ENGRO", start="2021-01-01")
 df.to_csv("engro_history.csv", index=False)
 df.to_excel("engro_history.xlsx", index=False)
 ```
@@ -69,7 +69,7 @@ import psxdata
 import pandas as pd
 
 tickers = ["ENGRO", "LUCK", "HBL"]
-frames = {t: psxdata.stocks(t, start="2024-01-01") for t in tickers}
+frames = {t: psxdata.stocks(t, start="2025-01-01") for t in tickers}
 
 # Build a close-price matrix
 close = pd.DataFrame({t: df.set_index("date")["close"] for t, df in frames.items()})

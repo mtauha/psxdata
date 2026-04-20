@@ -10,7 +10,7 @@ print("=" * 50)
 
 # 1. Historical prices
 print("\n1. ENGRO historical prices (last 5 rows)")
-df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
+df = psxdata.stocks("ENGRO", start="2025-01-01", end="2025-12-31")
 print(df.tail())
 
 # 2. Live quote

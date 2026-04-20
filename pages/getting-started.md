@@ -29,7 +29,7 @@ Fetch five years of ENGRO historical prices:
 ```python
 import psxdata
 
-df = psxdata.stocks("ENGRO", start="2020-01-01", end="2024-12-31")
+df = psxdata.stocks("ENGRO", start="2021-01-01", end="2025-12-31")
 print(df.shape)       # (rows, 7)
 print(df.dtypes)
 print(df.head())
@@ -49,7 +49,7 @@ is_anomaly             bool
 dtype: object
 
         date    open    high     low   close    volume  is_anomaly
-0 2020-01-02  286.90  293.50  285.00  291.00   1200000       False
+0 2021-01-04  286.90  293.50  285.00  291.00   1200000       False
 ...
 ```
 

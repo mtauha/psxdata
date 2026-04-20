@@ -15,10 +15,10 @@ pip install psxdata
 import psxdata
 
 # Download ENGRO historical prices
-df = psxdata.stocks("ENGRO", start="2024-01-01", end="2024-12-31")
+df = psxdata.stocks("ENGRO", start="2025-01-01", end="2025-12-31")
 print(df.head())
 #        date    open    high     low   close   volume
-# 0  2024-01-02  ...     ...     ...    ...      ...
+# 0  2025-01-02  ...     ...     ...    ...      ...
 ```
 
 ## Features
@@ -53,7 +53,7 @@ pip install psxdata
 import psxdata
 
 # Historical prices
-df = psxdata.stocks("LUCK", start="2023-01-01")
+df = psxdata.stocks("LUCK", start="2024-01-01")
 
 # All KSE-100 tickers
 kse100 = psxdata.tickers(index="KSE100")

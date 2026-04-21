@@ -42,6 +42,6 @@ async def validation_exception_handler(
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
 
-# TODO: first router PR should populate router_registry.
+
 for router in router_registry:
     app.include_router(router)

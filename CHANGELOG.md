@@ -26,6 +26,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Phase 4: Added `CONTRIBUTING.md` guide for adding new API endpoints — router pattern, registry wiring, response envelope, typed `response_model`, error codes, `Depends()` injection, and `TestClient` fixture conventions.
+- Phase 4: Added `test-api` CI job that installs `.[dev,api]` and runs `tests/unit/api/` in isolation from the core test environment.
+
+### Changed
+
+- CI `lint` job now installs `.[dev,api]` so mypy can resolve FastAPI imports when checking `api/`.
+- CI `test` job now ignores `tests/unit/api/` — API tests require FastAPI extras and run in the dedicated `test-api` job.
+- `.gitignore` — fixed self-ignoring pattern; contributors now receive the file on clone. Personal paths moved to maintainer’s global gitignore.
+
+---
+
+## [Unreleased — pre-Phase 4]
+
+### Added
+
 - Phase 0: Probed all 8 PSX endpoints. Confirmed rendering modes — `/sector-summary` and `/financial-reports` require Playwright; all other endpoints work with plain `requests`.
 - Phase 0: Captured HTML fixtures for all 5 key endpoints (`historical_engro`, `trading_panel`, `screener`, `sector_summary`, `financial_reports`).
 - Phase 0: Added `tools/probe_endpoints.py` — reusable diagnostic that probes all PSX endpoints and writes `docs/PSX_ENDPOINTS.md`.

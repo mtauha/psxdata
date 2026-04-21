@@ -99,11 +99,24 @@ Keep the subject line under 72 characters. Use the body to explain *why*, not *w
 
 Unit tests are required for any new utility, parser, or validator function. Integration tests are required for any new scraper. See [TESTING.md](TESTING.md) for the full guide.
 
+The test suite runs in two separate environments to match their dependency footprints:
+
+**Core (scraper/parser/cache)** — installs `.[dev]` only:
+
 ```bash
-pytest tests/unit/ -v                   # unit tests — run before every commit
-pytest -m integration -v               # integration — run before scraper PRs
-pytest tests/unit/ --cov=psxdata --cov-report=term-missing
+pytest tests/unit/ --ignore=tests/unit/api -v   # run before every commit
+pytest -m integration -v                         # run before scraper PRs
+pytest tests/unit/ --ignore=tests/unit/api --cov=psxdata --cov-report=term-missing
 ```
+
+**API layer** — requires `.[dev,api]` (FastAPI, uvicorn, slowapi):
+
+```bash
+pip install -e ".[dev,api]"
+pytest tests/unit/api/ -v
+```
+
+Never add FastAPI imports to `tests/unit/` outside of `tests/unit/api/` — those tests run without the API extras installed.
 
 ---
 

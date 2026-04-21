@@ -25,7 +25,7 @@
 pip install psxdata
 ```
 
-Requires Python 3.11+. For local development, see [CONTRIBUTING.md](CONTRIBUTING.md#local-development).
+Requires Python 3.11+.
 
 ---
 

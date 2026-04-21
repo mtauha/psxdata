@@ -115,7 +115,7 @@ pytest tests/unit/ --cov=psxdata --cov-report=term-missing
 - `mypy` must pass with zero errors on the modules you changed
 - No hardcoded date formats — always use `parse_date_safely()` from `parsers/normalizers.py`
 - No fixed column positions — always map by `<th>` name, never by index
-
+- The FastAPI app requires an editable install to use package-style imports. Do not add `sys.path` fallbacks in `api/*`.
 ---
 
 ## Adding a New Scraper
@@ -128,6 +128,35 @@ pytest tests/unit/ --cov=psxdata --cov-report=term-missing
 6. Write unit tests for any new helper functions first
 7. Write an integration test hitting the real PSX endpoint
 8. If using Playwright: capture an HTML fixture with `python tools/capture_fixtures.py`
+
+---
+
+## Adding a New API Endpoint
+
+1. Create `api/routers/{data_type}.py` — one file per data type
+2. Register the router in `api/routers/__init__.py`:
+   ```python
+   from .your_module import router as your_router
+   router_registry: list[APIRouter] = [..., your_router]
+   ```
+3. Declare `tags=` on the `APIRouter` for docs grouping
+4. Use a fully-typed `response_model` — `dict[str, str]` not `dict`
+5. All responses must follow this envelope:
+   ```python
+   {"data": ..., "meta": {"timestamp": ..., "cached": bool}}
+   ```
+6. Map HTTP errors explicitly:
+   - `404` — unknown symbol or resource not found
+   - `503` — PSX unreachable or library raised `PSXUnavailableError`
+   - `429` — handled by `slowapi`; do not re-raise manually
+7. Inject shared dependencies from `api/dependencies.py` via `Depends()` — never instantiate cache or rate limiter inside a route function
+8. Write a unit test using `TestClient`. Declare the fixture at module level, not inside the test body:
+   ```python
+   @pytest.fixture
+   def client() -> TestClient:
+       return TestClient(app)
+   ```
+9. Mock the library layer in unit tests — do not hit real PSX servers from `tests/unit/`
 
 ---
 

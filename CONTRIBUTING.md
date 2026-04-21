@@ -119,6 +119,35 @@ pytest tests/unit/ --cov=psxdata --cov-report=term-missing
 
 ---
 
+## Adding a New API Endpoint
+
+1. Create `api/routers/{data_type}.py` — one file per data type
+2. Register the router in `api/routers/__init__.py`:
+   ```python
+   from .your_module import router as your_router
+   router_registry: list[APIRouter] = [..., your_router]
+   ```
+3. Declare `tags=` on the `APIRouter` for docs grouping
+4. Use a fully-typed `response_model` — `dict[str, str]` not `dict`
+5. All responses must follow this envelope:
+   ```python
+   {"data": ..., "meta": {"timestamp": ..., "cached": bool}}
+   ```
+6. Map HTTP errors explicitly:
+   - `404` — unknown symbol or resource not found
+   - `503` — PSX unreachable or library raised `PSXUnavailableError`
+   - `429` — handled by `slowapi`; do not re-raise manually
+7. Inject shared dependencies from `api/dependencies.py` via `Depends()` — never instantiate cache or rate limiter inside a route function
+8. Write a unit test using `TestClient`. Declare the fixture at module level, not inside the test body:
+   ```python
+   @pytest.fixture
+   def client() -> TestClient:
+       return TestClient(app)
+   ```
+9. Mock the library layer in unit tests — do not hit real PSX servers from `tests/unit/`
+
+---
+
 ## Raising a PSX Endpoint Change
 
 If PSX changes a page structure and a scraper breaks, open an issue using the **Endpoint Change** template. Include the endpoint URL, what changed, and which scraper is affected. Add an inline comment to the broken code referencing the issue number: `# TODO(#N): brief description`.

@@ -103,7 +103,7 @@ pytest tests/unit/ --cov=psxdata --cov-report=term-missing
 - `mypy` must pass with zero errors on the modules you changed
 - No hardcoded date formats — always use `parse_date_safely()` from `parsers/normalizers.py`
 - No fixed column positions — always map by `<th>` name, never by index
-
+- The FastAPI app requires an editable install to use package-style imports. Do not add `sys.path` fallbacks in `api/*`.
 ---
 
 ## Adding a New Scraper

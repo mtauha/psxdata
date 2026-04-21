@@ -97,7 +97,7 @@ jobs:
 
       - name: Run API unit tests
         run: |
-          if [ -d tests/unit/api ]; then
+          if [ -d tests/unit/api ] && [ -n "$(find tests/unit/api -name 'test_*.py' | head -1)" ]; then
             pytest tests/unit/api/ -v --tb=short
           else
             echo "tests/unit/api/ not yet created — no tests to run"

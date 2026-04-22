@@ -142,10 +142,15 @@ Never add FastAPI imports to `tests/unit/` outside of `tests/unit/api/` — thos
    ```
 3. Declare `tags=` on the `APIRouter` for docs grouping
 4. Use a fully-typed `response_model` — `dict[str, str]` not `dict`
-5. All responses must follow this envelope:
-   ```python
-   {"data": ..., "meta": {"timestamp": ..., "cached": bool}}
-   ```
+5. All responses must follow the approved envelope spec:
+   - List endpoint:   `{"data": [...], "meta": {"timestamp": "...", "cached": bool, "count": N}}`
+   - Single-item:    `{"data": {...}, "meta": {"timestamp": "...", "cached": bool}}`
+   - Named tables:   `{"data": {"table_0": [...], ...}, "meta": {"timestamp": "...", "cached": bool}}`
+   - Error:          `{"error": {"status": 404, "code": "not_found", "message": "..."}}`
+
+   Use `MetaSingle` / `MetaList` from `api/schemas.py`. Never construct meta dicts by hand.
+   Error codes: `bad_request` (400/422), `not_found` (404), `rate_limited` (429),
+                `psx_unavailable` (503), `internal_error` (500).
 6. Map HTTP errors explicitly:
    - `404` — unknown symbol or resource not found
    - `503` — PSX unreachable or library raised `PSXUnavailableError`

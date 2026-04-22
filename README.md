@@ -101,7 +101,9 @@ Existing solutions for PSX data tend to hardcode date formats and column positio
 | `GET /debt-market` | Debt instruments |
 | `GET /eligible-scrips` | Margin eligible stocks |
 
-All responses: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}`
+All responses: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}` — list responses also include `"count": N` in meta.
+
+Errors: `{"error": {"status": 404, "code": "not_found", "message": "..."}}`
 
 ---
 

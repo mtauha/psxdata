@@ -28,12 +28,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Phase 4: Added `CONTRIBUTING.md` guide for adding new API endpoints — router pattern, registry wiring, response envelope, typed `response_model`, error codes, `Depends()` injection, and `TestClient` fixture conventions.
 - Phase 4: Added `test-api` CI job that installs `.[dev,api]` and runs `tests/unit/api/` in isolation from the core test environment.
+- Phase 4: Added `api/schemas.py` — six Pydantic v2 models (`MetaSingle`, `MetaList`, `ErrorDetail`, `ErrorEnvelope`, `HealthData`, `HealthResponse`) forming the standardized response envelope.
+- Phase 4: Added `GET /health` endpoint returning `{"data": {"status": "ok"}, "meta": {"timestamp": ..., "cached": false}}` using typed `response_model=HealthResponse`.
+- Phase 4: Added 17 unit tests covering schemas, error envelope paths, and the health route.
 
 ### Changed
 
 - CI `lint` job now installs `.[dev,api]` so mypy can resolve FastAPI imports when checking `api/`.
 - CI `test` job now ignores `tests/unit/api/` — API tests require FastAPI extras and run in the dedicated `test-api` job.
-- `.gitignore` — fixed self-ignoring pattern; contributors now receive the file on clone. Personal paths moved to maintainer’s global gitignore.
+- `.gitignore` — fixed self-ignoring pattern; contributors now receive the file on clone. Personal paths moved to maintainer's global gitignore.
+- `api/main.py` — replaced three ad-hoc exception handlers with five spec-compliant handlers; `PSXUnavailableError` → 503, `InvalidSymbolError` → 404, all errors return `{"error": {"status", "code", "message"}}` envelope.
+- `api/routers/__init__.py` — registered `health_router`; switched from relative to absolute imports.
+- `README.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md` — updated API response envelope documentation to include `count` on list responses and the error envelope shape.
 
 ---
 

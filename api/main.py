@@ -4,8 +4,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from .routers import router_registry
+from psxdata.exceptions import InvalidSymbolError, PSXUnavailableError
+
+from api.routers import router_registry
 
 
 @asynccontextmanager
@@ -26,21 +29,64 @@ app.add_middleware(
 )
 
 
+_ERROR_CODES: dict[int, str] = {
+    400: "bad_request",
+    404: "not_found",
+    422: "bad_request",
+    429: "rate_limited",
+    503: "psx_unavailable",
+    500: "internal_error",
+}
+
+
+@app.exception_handler(PSXUnavailableError)
+async def psx_unavailable_handler(request: Request, exc: PSXUnavailableError) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        content={"error": {"status": 503, "code": "psx_unavailable", "message": str(exc)}},
+    )
+
+
+@app.exception_handler(InvalidSymbolError)
+async def invalid_symbol_handler(request: Request, exc: InvalidSymbolError) -> JSONResponse:
+    return JSONResponse(
+        status_code=404,
+        content={"error": {"status": 404, "code": "not_found", "message": str(exc)}},
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
-    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+    code = _ERROR_CODES.get(exc.status_code, "internal_error")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": {"status": exc.status_code, "code": code, "message": str(exc.detail)}},
+    )
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+    parts = []
+    for e in exc.errors():
+        loc = " -> ".join(str(l) for l in e.get("loc", []) if l != "body")
+        msg = e.get("msg", "invalid value")
+        parts.append(f"{loc}: {msg}" if loc else msg)
+    message = "; ".join(parts) if parts else "invalid input"
+    return JSONResponse(
+        status_code=422,
+        content={"error": {"status": 422, "code": "bad_request", "message": message}},
+    )
 
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    return JSONResponse(status_code=500, content={"detail": "Internal Server Error"})
+    return JSONResponse(
+        status_code=500,
+        content={"error": {"status": 500, "code": "internal_error", "message": "Internal Server Error"}},
+    )
 
 
 for router in router_registry:

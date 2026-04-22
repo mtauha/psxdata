@@ -195,7 +195,9 @@ GET  /debt-market
 GET  /eligible-scrips
 ```
 
-All responses: `{"data": ..., "meta": {"timestamp": ..., "cached": bool}}`
+All responses: `{"data": ..., "meta": {"timestamp": ..., "cached": bool}}` — list responses also include `"count": N` in meta.
+
+Errors: `{"error": {"status": 404, "code": "not_found", "message": "..."}}`
 
 Rate limit: 60 req/min per IP via `slowapi`. CORS: all origins. No auth required.
 

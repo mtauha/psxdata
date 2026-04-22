@@ -1,18 +1,18 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from psxdata.exceptions import InvalidSymbolError, PSXUnavailableError
-
 from api.routers import router_registry
+from psxdata.exceptions import InvalidSymbolError, PSXUnavailableError
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Manage application lifespan — startup and shutdown events."""
     # TODO: initialise cache / Redis on startup, close on shutdown.
     yield
 
@@ -43,7 +43,7 @@ _ERROR_CODES: dict[int, str] = {
 async def psx_unavailable_handler(request: Request, exc: PSXUnavailableError) -> JSONResponse:
     return JSONResponse(
         status_code=503,
-        content={"error": {"status": 503, "code": "psx_unavailable", "message": str(exc)}},
+        content={"error": {"status": 503, "code": _ERROR_CODES[503], "message": str(exc)}},
     )
 
 
@@ -51,13 +51,12 @@ async def psx_unavailable_handler(request: Request, exc: PSXUnavailableError) ->
 async def invalid_symbol_handler(request: Request, exc: InvalidSymbolError) -> JSONResponse:
     return JSONResponse(
         status_code=404,
-        content={"error": {"status": 404, "code": "not_found", "message": str(exc)}},
+        content={"error": {"status": 404, "code": _ERROR_CODES[404], "message": str(exc)}},
     )
 
 
 @app.exception_handler(StarletteHTTPException)
-@app.exception_handler(HTTPException)
-async def http_exception_handler(request: Request, exc: HTTPException) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     code = _ERROR_CODES.get(exc.status_code, "internal_error")
     return JSONResponse(
         status_code=exc.status_code,
@@ -71,7 +70,7 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     parts = []
     for e in exc.errors():
-        loc = " -> ".join(str(l) for l in e.get("loc", []) if l != "body")
+        loc = " -> ".join(str(part) for part in e.get("loc", []) if part != "body")
         msg = e.get("msg", "invalid value")
         parts.append(f"{loc}: {msg}" if loc else msg)
     message = "; ".join(parts) if parts else "invalid input"
@@ -85,7 +84,7 @@ async def validation_exception_handler(
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
         status_code=500,
-        content={"error": {"status": 500, "code": "internal_error", "message": "Internal Server Error"}},
+        content={"error": {"status": 500, "code": "internal_error", "message": "Internal Server Error"}},  # noqa: E501
     )
 
 

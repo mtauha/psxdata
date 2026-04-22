@@ -1,4 +1,6 @@
 """Unit tests for GET /health."""
+from datetime import datetime
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -33,6 +35,5 @@ def test_health_meta_has_no_count(client: TestClient) -> None:
 
 
 def test_health_timestamp_is_iso8601(client: TestClient) -> None:
-    from datetime import datetime
     ts = client.get("/health").json()["meta"]["timestamp"]
     datetime.fromisoformat(ts)

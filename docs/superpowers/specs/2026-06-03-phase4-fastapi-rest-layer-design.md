@@ -14,6 +14,8 @@ Build the `api/` FastAPI service that wraps the `psxdata` Python library and exp
 - Redis caching layer (hook point reserved in `dependencies.py`)
 - Dockerfile (no Playwright, Python 3.11-slim base — straightforward when endpoints are complete)
 
+**Deployment model:** The `api/` package is not included in the built wheel (`pyproject.toml` discovers `psxdata*` only). Production runs from a repo checkout (e.g., Docker `COPY . /app && uvicorn api.main:app`). If wheel packaging of `api/` is ever needed, add `api*` to `include` in `pyproject.toml` and add a packaging smoke test.
+
 **Approach:** TDD — tests are written before each router implementation.
 
 ---
@@ -26,7 +28,7 @@ Build the `api/` FastAPI service that wraps the `psxdata` Python library and exp
 | `api/schemas.py` — `MetaSingle`, `MetaList`, `ErrorDetail`, `ErrorEnvelope`, `HealthData`, `HealthResponse` | ✅ |
 | `api/routers/health.py` — `GET /health` | ✅ |
 | `api/dependencies.py` — stubs for `get_cache()`, `get_rate_limiter()` | ✅ (stubs only) |
-| `tests/unit/api/test_health.py` — 17 tests | ✅ |
+| `tests/unit/api/` — 17 API unit tests across `test_health.py` (5), `test_schemas.py` (7), `test_error_envelope.py` (5) | ✅ |
 
 ---
 
@@ -37,11 +39,11 @@ Build the `api/` FastAPI service that wraps the `psxdata` Python library and exp
 ```
 api/
 ├── main.py              # app, CORS, error handlers, slowapi wiring
-├── dependencies.py      # Limiter instance + get_limiter(); get_cache() stub retained
+├── dependencies.py      # Limiter instance + get_rate_limiter(); get_cache() stub retained
 ├── schemas.py           # all public response models (grows in place)
 ├── __init__.py
 └── routers/
-    ├── __init__.py      # router_registry — registers all 5 routers
+    ├── __init__.py      # router_registry — registers all 5 routers (final state after implementation)
     ├── health.py        # done
     ├── stocks.py        # new
     ├── indices.py       # new
@@ -113,6 +115,8 @@ A corresponding module-level convenience function `psxdata.symbols()` is also ad
 | GET | `/indices` | `constants.INDEX_NAMES` (no network call) | `StringListResponse` |
 | GET | `/indices/{name}` | `indices(name)` | `IndexConstituentResponse` |
 
+**`PSXParseError` handling:** When PSX returns 4xx for an unknown index name, `IndicesScraper` raises `PSXParseError`. The indices router catches this locally and re-raises as `HTTPException(status_code=404)`. A global handler is not used — it would incorrectly map parse errors from other endpoints to 404.
+
 **Note:** There is no historical index-level time series in the library. `IndicesScraper` returns current constituent snapshots only (symbol weights, market cap, etc.). Historical index levels would require a new scraper — deferred to a future phase.
 
 **Error behaviour:**
@@ -171,14 +175,16 @@ class HistoricalResponse(BaseModel):
 
 class QuoteData(BaseModel):
     symbol: str
-    ldcp: float
     price: float
-    change: float
-    change_pct: float
-    volume_avg_30d: float | None
-    market_cap: float | None
-    pe_ratio: float | None
-    dividend_yield: float | None
+    market_cap: float | None = None
+    pe_ratio: float | None = None
+    dividend_yield: float | None = None
+    free_float: float | None = None
+    volume_avg_30d: float | None = None
+    change_1y_pct: float | None = None
+    ldcp: float | None = None       # not confirmed in all screener responses
+    change: float | None = None     # not confirmed in all screener responses
+    change_pct: float | None = None # not confirmed in all screener responses
 
 class QuoteResponse(BaseModel):
     data: QuoteData
@@ -206,8 +212,8 @@ class IndexConstituentRow(BaseModel):
     idx_weight: float
     idx_point: float
     market_cap_m: float
-    freefloat_m: float | None
-    shares_m: float | None
+    freefloat_m: float | None = None  # present only on some indices
+    shares_m: float | None = None     # present only on some indices
 
 class IndexConstituentResponse(BaseModel):
     data: list[IndexConstituentRow]
@@ -245,24 +251,32 @@ class MarketTablesResponse(BaseModel):
 
 `slowapi` at 60 req/min per IP. Wired in three places:
 
-**`api/dependencies.py`** — replace stubs:
+**`api/dependencies.py`** — replace stubs (keep `get_rate_limiter()` name to match existing stub):
 ```python
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
+
+def get_rate_limiter() -> Limiter:
+    return limiter
 ```
 
-**`api/main.py`** — register limiter and 429 handler (additive to existing setup):
+**`api/main.py`** — register limiter, middleware, and a **custom** 429 handler to preserve the error envelope (do NOT use `_rate_limit_exceeded_handler` — it bypasses our envelope):
 ```python
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from api.dependencies import limiter
 
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={"error": {"status": 429, "code": "rate_limited", "message": "Rate limit exceeded"}},
+    )
 ```
 
 **Each endpoint** — `Request` parameter required by slowapi for IP extraction:
@@ -297,6 +311,18 @@ def client():
     from api.main import app
     return TestClient(app)
 ```
+
+---
+
+## Date Serialization
+
+The `psxdata` library returns pandas `Timestamp` objects in DataFrame date columns. `df.to_dict("records")` does not automatically convert these to ISO strings — Pydantic coercion on `str` fields will fail or produce unexpected output.
+
+Routers must explicitly convert date columns before building response objects:
+```python
+df["date"] = df["date"].dt.strftime("%Y-%m-%d")
+```
+For nullable date columns (e.g., `period_ended`, `posting_date` in fundamentals), use `.apply(lambda x: x.strftime("%Y-%m-%d") if pd.notna(x) else None)`.
 
 ---
 

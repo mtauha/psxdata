@@ -8,6 +8,7 @@ from psxdata.client import (
     quote,
     sectors,
     stocks,
+    symbols,
     tickers,
 )
 from psxdata.scrapers.base import BaseScraper
@@ -25,4 +26,5 @@ __all__ = [
     "fundamentals",
     "debt_market",
     "eligible_scrips",
+    "symbols",
 ]

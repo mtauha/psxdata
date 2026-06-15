@@ -6,6 +6,8 @@ from unittest.mock import MagicMock
 import pandas as pd
 import pytest
 
+from unittest.mock import patch
+
 from psxdata.client import PSXClient
 
 # Fixed "today" used throughout — avoids flakiness around midnight.
@@ -348,6 +350,55 @@ class TestDebtMarket:
 # ---------------------------------------------------------------------------
 # eligible_scrips()
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# mock_cache fixture (shared by symbols tests)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def mock_cache(tmp_path):
+    """Return a PSXClient wired to an isolated real DiskCache."""
+    c = PSXClient(cache_dir=str(tmp_path / "cache"))
+    return c
+
+
+# ---------------------------------------------------------------------------
+# symbols()
+# ---------------------------------------------------------------------------
+
+def test_symbols_returns_dataframe(mock_cache):
+    """symbols() returns the full DataFrame from SymbolsScraper."""
+    expected = pd.DataFrame({
+        "symbol": ["ENGRO", "LUCK"],
+        "name": ["Engro Corporation", "Lucky Cement"],
+        "sector_name": ["FERTILIZER", "CEMENT"],
+        "is_etf": [False, False],
+        "is_debt": [False, False],
+        "is_gem": [False, False],
+    })
+    client = mock_cache
+    with patch.object(client._symbols, "fetch", return_value=expected):
+        result = client.symbols(cache=False)
+    assert list(result["symbol"]) == ["ENGRO", "LUCK"]
+    assert "sector_name" in result.columns
+
+
+def test_symbols_shares_cache_with_tickers(mock_cache):
+    """symbols() and tickers(index=None) share the 'symbols_all' cache key."""
+    symbols_df = pd.DataFrame({
+        "symbol": ["ENGRO"],
+        "name": ["Engro Corporation"],
+        "sector_name": ["FERTILIZER"],
+        "is_etf": [False],
+        "is_debt": [False],
+        "is_gem": [False],
+    })
+    client = mock_cache
+    with patch.object(client._symbols, "fetch", return_value=symbols_df) as mock_fetch:
+        client.tickers()   # populates symbols_all cache
+        client.symbols()   # should reuse cache, not call fetch again
+    mock_fetch.assert_called_once()
+
 
 class TestEligibleScrips:
     @pytest.fixture

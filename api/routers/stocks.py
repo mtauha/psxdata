@@ -4,9 +4,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pandas as pd
-import psxdata
 from fastapi import APIRouter, HTTPException, Request
 
+import psxdata
 from api.dependencies import limiter
 from api.schemas import (
     FundamentalsResponse,
@@ -58,7 +58,10 @@ def get_historical(
     df = psxdata.stocks(symbol.upper(), start=start, end=end)
     rows: list[OHLCVRow] = []
     if not df.empty:
-        rows = [OHLCVRow(**{k: r.get(k) for k in OHLCVRow.model_fields}) for r in _df_to_records(df)]
+        rows = [
+            OHLCVRow(**{k: r.get(k) for k in OHLCVRow.model_fields})
+            for r in _df_to_records(df)
+        ]
     return HistoricalResponse(
         data=rows,
         meta=MetaList(timestamp=_now_iso(), cached=False, count=len(rows)),

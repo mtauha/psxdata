@@ -4,10 +4,9 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.dependencies import limiter
 from api.routers import router_registry
@@ -49,7 +48,9 @@ _ERROR_CODES: dict[int, str] = {
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     return JSONResponse(
         status_code=429,
-        content={"error": {"status": 429, "code": "rate_limited", "message": "Rate limit exceeded"}},
+        content={
+            "error": {"status": 429, "code": "rate_limited", "message": "Rate limit exceeded"}
+        },
     )
 
 

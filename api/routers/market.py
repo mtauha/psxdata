@@ -5,9 +5,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 import pandas as pd
-import psxdata
 from fastapi import APIRouter, Request
 
+import psxdata
 from api.dependencies import limiter
 from api.schemas import MarketTablesResponse, MetaSingle
 

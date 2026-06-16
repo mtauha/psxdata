@@ -4,9 +4,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pandas as pd
-import psxdata
 from fastapi import APIRouter, Request
 
+import psxdata
 from api.dependencies import limiter
 from api.schemas import (
     MetaList,
@@ -29,7 +29,10 @@ def list_sectors(request: Request) -> SectorsResponse:
     rows: list[SectorRow] = []
     if not df.empty:
         df = df.where(pd.notna(df), other=None)
-        rows = [SectorRow(**{k: r.get(k) for k in SectorRow.model_fields}) for r in df.to_dict("records")]
+        rows = [
+            SectorRow(**{k: r.get(k) for k in SectorRow.model_fields})
+            for r in df.to_dict("records")
+        ]
     return SectorsResponse(
         data=rows,
         meta=MetaList(timestamp=_now_iso(), cached=False, count=len(rows)),

@@ -376,6 +376,25 @@ class PSXClient:
             self._cache.set_dict(cache_key, data, ttl=CACHE_TTL_TODAY)
         return data
 
+    def symbols(self, cache: bool = True) -> pd.DataFrame:
+        """Return all listed PSX symbols with sector names.
+
+        Reuses the 'symbols_all' cache key shared with tickers(index=None).
+
+        Returns:
+            DataFrame with columns: symbol, name, sector_name, is_etf, is_debt, is_gem.
+            Empty DataFrame if PSX returns no data.
+        """
+        df: pd.DataFrame | None = None
+        if cache:
+            df = self._cache.get("symbols_all")
+        if df is None:
+            logger.debug("Fetching all symbols from PSX")
+            df = self._symbols.fetch()
+            if cache and not df.empty:
+                self._cache.set("symbols_all", df, ttl=CACHE_TTL_TODAY)
+        return df if df is not None else pd.DataFrame()
+
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
@@ -635,3 +654,12 @@ def eligible_scrips(cache: bool = True) -> dict[str, pd.DataFrame]:
             print(key, df.shape)
     """
     return _client().eligible_scrips(cache=cache)
+
+
+def symbols(cache: bool = True) -> pd.DataFrame:
+    """Return all listed PSX symbols with sector names.
+
+    Returns:
+        DataFrame with columns: symbol, name, sector_name, is_etf, is_debt, is_gem.
+    """
+    return _client().symbols(cache=cache)

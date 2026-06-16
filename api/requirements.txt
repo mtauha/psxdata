@@ -1,0 +1,11 @@
+# API layer dependencies — used for standalone Docker deployment
+# Install: pip install -r api/requirements.txt
+
+# Core psxdata library (install from repo root)
+# RUN pip install -e .
+
+# FastAPI layer
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+slowapi>=0.1.9
+httpx>=0.24.0

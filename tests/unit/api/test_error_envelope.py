@@ -1,8 +1,10 @@
 """Tests that all HTTP errors return the standardized error envelope."""
 import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 from psxdata.exceptions import InvalidSymbolError, PSXUnavailableError
 
+from api.dependencies import limiter
 from api.main import app
 
 # Register sentinel routes at module level to avoid mutating `app` inside test bodies.
@@ -20,6 +22,12 @@ def _psx_down():
 @app.get("/__test_404_symbol")
 def _bad_symbol():
     raise InvalidSymbolError("FAKESYM not found on PSX")
+
+
+@app.get("/__test_ratelimit_tight")
+@limiter.limit("1/minute")
+def _tight(request: Request):
+    return {"ok": True}
 
 
 @pytest.fixture
@@ -66,3 +74,14 @@ def test_invalid_symbol_maps_to_404(client: TestClient) -> None:
     body = resp.json()
     assert body["error"]["status"] == 404
     assert body["error"]["code"] == "not_found"
+
+
+def test_rate_limited_uses_error_envelope(client: TestClient) -> None:
+    client.get("/__test_ratelimit_tight")          # first passes
+    resp = client.get("/__test_ratelimit_tight")   # second is rate limited
+    assert resp.status_code == 429
+    body = resp.json()
+    assert "error" in body
+    assert body["error"]["status"] == 429
+    assert body["error"]["code"] == "rate_limited"
+    assert "detail" not in body

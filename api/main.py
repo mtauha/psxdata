@@ -4,8 +4,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from api.dependencies import limiter
 from api.routers import router_registry
 from psxdata.exceptions import InvalidSymbolError, PSXUnavailableError
 
@@ -18,6 +21,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="psxdata", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,6 +42,16 @@ _ERROR_CODES: dict[int, str] = {
     503: "psx_unavailable",
     500: "internal_error",
 }
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={
+            "error": {"status": 429, "code": "rate_limited", "message": "Rate limit exceeded"}
+        },
+    )
 
 
 @app.exception_handler(PSXUnavailableError)

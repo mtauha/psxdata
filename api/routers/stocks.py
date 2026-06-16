@@ -58,10 +58,7 @@ def get_historical(
     df = psxdata.stocks(symbol.upper(), start=start, end=end)
     rows: list[OHLCVRow] = []
     if not df.empty:
-        rows = [
-            OHLCVRow(**{k: r.get(k) for k in OHLCVRow.model_fields})
-            for r in _df_to_records(df)
-        ]
+        rows = [OHLCVRow.model_validate(r) for r in _df_to_records(df)]
     return HistoricalResponse(
         data=rows,
         meta=MetaList(timestamp=_now_iso(), cached=False, count=len(rows)),
@@ -75,7 +72,7 @@ def get_quote(request: Request, symbol: str) -> QuoteResponse:
     if df.empty:
         raise HTTPException(status_code=404, detail=f"{symbol.upper()} not found")
     row = _df_to_records(df)[0]
-    data = QuoteData(**{k: row.get(k) for k in QuoteData.model_fields})
+    data = QuoteData.model_validate(row)
     return QuoteResponse(
         data=data,
         meta=MetaSingle(timestamp=_now_iso(), cached=False),
@@ -88,10 +85,7 @@ def get_fundamentals(request: Request, symbol: str) -> FundamentalsResponse:
     df = psxdata.fundamentals(symbol=symbol.upper())
     rows: list[FundamentalsRow] = []
     if not df.empty:
-        rows = [
-            FundamentalsRow(**{k: r.get(k) for k in FundamentalsRow.model_fields})
-            for r in _df_to_records(df)
-        ]
+        rows = [FundamentalsRow.model_validate(r) for r in _df_to_records(df)]
     return FundamentalsResponse(
         data=rows,
         meta=MetaList(timestamp=_now_iso(), cached=False, count=len(rows)),

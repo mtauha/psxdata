@@ -13,7 +13,7 @@
 <details>
 <summary>Alpha release note</summary>
 
-`0.1.0a1` — Core scraping, caching, and public API are complete. The FastAPI REST layer and full documentation are in progress. APIs may change before `1.0`.
+`0.1.0a1` — Core scraping, caching, public API, and FastAPI REST layer are complete. APIs may change before `1.0`.
 
 </details>
 
@@ -85,9 +85,7 @@ Existing solutions for PSX data tend to hardcode date formats and column positio
 
 ---
 
-## Planned REST API
-
-> The FastAPI layer is planned for Phase 4.
+## REST API
 
 | Endpoint | Description |
 |---|---|
@@ -116,7 +114,7 @@ See the [roadmap issue](https://github.com/mtauha/psxdata/issues/4) for the full
 - ✅ Phase 2 — Core engineering (BaseScraper, parsers, cache, utils)
 - ✅ Phase 3 — Scrapers (historical, real-time, indices, sectors, fundamentals, screener, debt, eligible scrips)
 - ✅ Phase 3 API — Public Python package interface
-- 🔲 Phase 4 — FastAPI REST layer
+- ✅ Phase 4 — FastAPI REST layer
 - 🔲 Phase 5 — Full test suite (API layer tests pending)
 - ✅ Phase 6 — Packaging & PyPI publish
 - 🔲 Phase 7 — Documentation

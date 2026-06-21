@@ -17,3 +17,13 @@ uv.lock
 .venv/
 .claude/
 .vscode/
+psxdata/
+tools/
+examples/
+overrides/
+pyproject.toml
+mkdocs.yml
+.gitignore
+.readthedocs.yaml
+llms.txt
+*.md

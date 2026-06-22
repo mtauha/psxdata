@@ -24,6 +24,7 @@ RUN adduser --disabled-password --gecos "" psxuser \
     && chown -R psxuser:psxuser /home/psxuser
 
 ENV HOME=/home/psxuser
+ENV PYTHONPATH=/app
 ENV PORT=8000
 EXPOSE $PORT
 

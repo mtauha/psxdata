@@ -31,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 4: Added `api/schemas.py` — six Pydantic v2 models (`MetaSingle`, `MetaList`, `ErrorDetail`, `ErrorEnvelope`, `HealthData`, `HealthResponse`) forming the standardized response envelope.
 - Phase 4: Added `GET /health` endpoint returning `{"data": {"status": "ok"}, "meta": {"timestamp": ..., "cached": false}}` using typed `response_model=HealthResponse`.
 - Phase 4: Added 17 unit tests covering schemas, error envelope paths, and the health route.
+- Phase 4: Added `GET /stocks`, `GET /stocks/{symbol}` endpoints — paginated list and per-symbol OHLCV history, backed by `PSXClient.historical()` with typed `response_model`.
+- Phase 4: Added `GET /indices`, `GET /indices/{name}` endpoints — full index list and filtered records by index name.
+- Phase 4: Added `GET /sectors`, `GET /sectors/{sector}` endpoints — sector summary list and per-sector filtering.
+- Phase 4: Added `GET /market` endpoint — combined real-time trading panel data across all 15 board combinations.
+- Phase 4: Added `PSXClient.symbols()` and top-level `psxdata.symbols()` for sector-filtered symbol lookup, used by the stocks router for symbol validation.
+- Phase 4: Added 9 new Pydantic v2 response models to `api/schemas.py`: `StocksRow`, `StocksResponse`, `IndexRecord`, `IndicesResponse`, `SectorSummary`, `SectorsResponse`, `MarketRow`, `MarketResponse`, `SymbolsResponse`.
 
 ### Changed
 
@@ -40,6 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `api/main.py` — replaced three ad-hoc exception handlers with five spec-compliant handlers; `PSXUnavailableError` → 503, `InvalidSymbolError` → 404, all errors return `{"error": {"status", "code", "message"}}` envelope.
 - `api/routers/__init__.py` — registered `health_router`; switched from relative to absolute imports.
 - `README.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md` — updated API response envelope documentation to include `count` on list responses and the error envelope shape.
+- `api/main.py` — registered all four new routers (`stocks`, `indices`, `sectors`, `market`) via `app.include_router()`.
 
 ---
 

@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/mtauha/psxdata/actions/workflows/ci.yml/badge.svg)](https://github.com/mtauha/psxdata/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/psxdata)](https://pypi.org/project/psxdata/)
-[![Documentation](https://readthedocs.org/projects/psxdata/badge/?version=latest)](https://psxdata.readthedocs.io/)
+[![Documentation](https://img.shields.io/badge/docs-mintlify-blue)](https://psxdata.mintlify.app)
 [![Python](https://img.shields.io/pypi/pyversions/psxdata)](https://pypi.org/project/psxdata/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**[Full documentation at psxdata.readthedocs.io](https://psxdata.readthedocs.io/)**
+**[Full documentation at psxdata.mintlify.app](https://psxdata.mintlify.app)**
 
 **psxdata** is a Python library for downloading Pakistan Stock Exchange (PSX) data — historical OHLCV prices, real-time quotes, KSE-100 index constituents, sector summaries, fundamentals, debt market instruments, and margin-eligible stocks. Free, open-source, and actively maintained.
 

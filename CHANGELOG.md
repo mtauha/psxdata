@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Extracted the FastAPI REST layer (`api/`) into a standalone repository, [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api), with full git history preserved via `git filter-repo`. The API now ships and versions independently of this library.
+
 ### Added
 
 - Phase 4: Added multi-stage `Dockerfile` for the `api/` service — `builder` stage installs dependencies into a venv, `runtime` stage copies only the venv and `api/` source, resulting in a minimal image with no build tools.

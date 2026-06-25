@@ -13,7 +13,7 @@
 <details>
 <summary>Alpha release note</summary>
 
-`0.1.0a1` — Core scraping, caching, public API, and FastAPI REST layer are complete. APIs may change before `1.0`.
+`0.1.0a1` — Core scraping, caching, and public API are complete. The FastAPI REST layer has moved to [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api). APIs may change before `1.0`.
 
 </details>
 
@@ -87,41 +87,9 @@ Existing solutions for PSX data tend to hardcode date formats and column positio
 
 ## REST API
 
-| Endpoint | Description |
-|---|---|
-| `GET /health` | Health check |
-| `GET /stocks` | All tickers |
-| `GET /stocks/{symbol}/historical?start=&end=` | Historical OHLCV |
-| `GET /stocks/{symbol}/quote` | Real-time quote |
-| `GET /stocks/{symbol}/fundamentals` | Fundamentals |
-| `GET /indices/{name}` | Index constituents |
-| `GET /sectors` | Sector aggregates |
-| `GET /debt-market` | Debt instruments |
-| `GET /eligible-scrips` | Margin eligible stocks |
+A FastAPI REST service wrapping this library now lives in a standalone repository: **[mtauha/psxdata-api](https://github.com/mtauha/psxdata-api)**.
 
-All responses: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}` — list responses also include `"count": N` in meta.
-
-Errors: `{"error": {"status": 404, "code": "not_found", "message": "..."}}`
-
-### Running the API with Docker
-
-The `api/` service ships as a standalone multi-stage Docker image — it installs `psxdata` from PyPI, so it does not need the repo checked out.
-
-```bash
-# Build
-docker build -t psxdata-api .
-
-# Run (default port 8000)
-docker run -p 8000:8000 psxdata-api
-
-# Run on a custom port
-docker run -e PORT=9000 -p 9000:9000 psxdata-api
-
-# Health check
-curl http://localhost:8000/health
-```
-
-The container runs as a non-root user with a single uvicorn worker. Scale by running multiple containers behind a load balancer.
+It exposes the same data as this library over HTTP (`GET /stocks`, `GET /indices/{name}`, `GET /sectors`, etc.), installs `psxdata` from PyPI, and ships its own Docker image (`mtauha/psxdata-api` on Docker Hub) and CI/CD pipeline. See that repo's README for endpoints, request/response formats, and Docker run instructions.
 
 ---
 
@@ -134,7 +102,7 @@ See the [roadmap issue](https://github.com/mtauha/psxdata/issues/4) for the full
 - ✅ Phase 2 — Core engineering (BaseScraper, parsers, cache, utils)
 - ✅ Phase 3 — Scrapers (historical, real-time, indices, sectors, fundamentals, screener, debt, eligible scrips)
 - ✅ Phase 3 API — Public Python package interface
-- ✅ Phase 4 — FastAPI REST layer
+- ✅ Phase 4 — FastAPI REST layer (now at [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api))
 - 🔲 Phase 5 — Full test suite (API layer tests pending)
 - ✅ Phase 6 — Packaging & PyPI publish
 - 🔲 Phase 7 — Documentation

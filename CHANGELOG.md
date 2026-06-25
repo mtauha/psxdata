@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 4: `Dockerfile` runs as non-root user `psxuser` with a pre-created `~/.psxdata/cache/` directory for psxdata's disk cache.
 - Phase 4: `Dockerfile` supports a configurable `PORT` environment variable (default `8000`) via shell-form `CMD exec uvicorn ...` for correct signal handling.
 - Phase 4: Added `HEALTHCHECK` (`GET /health`, 30s interval, 60s start period, 5 retries) to the `Dockerfile`.
+- Phase 4: Added `.github/workflows/docker-publish.yml` — builds and pushes the `api/` Docker image to Docker Hub (`mtauha/psxdata-api`) as `latest` and the tag's version on every `v*` tag push, using `docker/login-action`, `docker/setup-buildx-action`, and `docker/build-push-action` with GitHub Actions layer caching.
 
 - Phase 4: Added `CONTRIBUTING.md` guide for adding new API endpoints — router pattern, registry wiring, response envelope, typed `response_model`, error codes, `Depends()` injection, and `TestClient` fixture conventions.
 - Phase 4: Added `test-api` CI job that installs `.[dev,api]` and runs `tests/unit/api/` in isolation from the core test environment.

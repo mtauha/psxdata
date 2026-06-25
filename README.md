@@ -91,6 +91,26 @@ A FastAPI REST service wrapping this library now lives in a standalone repositor
 
 It exposes the same data as this library over HTTP (`GET /stocks`, `GET /indices/{name}`, `GET /sectors`, etc.), installs `psxdata` from PyPI, and ships its own Docker image (`mtauha/psxdata-api` on Docker Hub) and CI/CD pipeline. See that repo's README for endpoints, request/response formats, and Docker run instructions.
 
+### Running the API with Docker
+
+The `api/` service ships as a standalone multi-stage Docker image — it installs `psxdata` from PyPI, so it does not need the repo checked out.
+
+```bash
+# Build
+docker build -t psxdata-api .
+
+# Run (default port 8000)
+docker run -p 8000:8000 psxdata-api
+
+# Run on a custom port
+docker run -e PORT=9000 -p 9000:9000 psxdata-api
+
+# Health check
+curl http://localhost:8000/health
+```
+
+The container runs as a non-root user with a single uvicorn worker. Scale by running multiple containers behind a load balancer.
+
 ---
 
 ## Development Status

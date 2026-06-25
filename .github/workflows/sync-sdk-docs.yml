@@ -1,0 +1,31 @@
+name: Sync SDK docs to psxdata-docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'CHANGELOG.md'
+      - 'CONTRIBUTING.md'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Push to psxdata-docs
+        env:
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+        run: |
+          git clone https://x-access-token:${DOCS_REPO_TOKEN}@github.com/mtauha/psxdata-docs.git /tmp/psxdata-docs
+          printf -- '---\ntitle: "Changelog"\ndescription: "Release history for the psxdata Python SDK."\n---\n\n' > /tmp/psxdata-docs/changelog.mdx
+          cat CHANGELOG.md >> /tmp/psxdata-docs/changelog.mdx
+          printf -- '---\ntitle: "Contributing"\ndescription: "How to contribute to psxdata."\n---\n\n' > /tmp/psxdata-docs/contributing.mdx
+          cat CONTRIBUTING.md >> /tmp/psxdata-docs/contributing.mdx
+          cd /tmp/psxdata-docs
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add changelog.mdx contributing.mdx
+          git diff --staged --quiet || git commit -m "chore: sync SDK docs from psxdata-sdk@${{ github.sha }}"
+          git push

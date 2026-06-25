@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Phase 4: Added multi-stage `Dockerfile` for the `api/` service — `builder` stage installs dependencies into a venv, `runtime` stage copies only the venv and `api/` source, resulting in a minimal image with no build tools.
+- Phase 4: Added `.dockerignore` — strips all non-essential paths (`psxdata/`, `tests/`, `docs/`, `tools/`, `examples/`, build artifacts, config files) from the Docker build context.
+- Phase 4: `Dockerfile` runs as non-root user `psxuser` with a pre-created `~/.psxdata/cache/` directory for psxdata's disk cache.
+- Phase 4: `Dockerfile` supports a configurable `PORT` environment variable (default `8000`) via shell-form `CMD exec uvicorn ...` for correct signal handling.
+- Phase 4: Added `HEALTHCHECK` (`GET /health`, 30s interval, 60s start period, 5 retries) to the `Dockerfile`.
+- Phase 4: Added `.github/workflows/docker-publish.yml` — builds and pushes the `api/` Docker image to Docker Hub (`mtauha/psxdata-api`) as `latest` and the tag's version on every `v*` tag push, using `docker/login-action`, `docker/setup-buildx-action`, and `docker/build-push-action` with GitHub Actions layer caching.
+
 - Phase 4: Added `CONTRIBUTING.md` guide for adding new API endpoints — router pattern, registry wiring, response envelope, typed `response_model`, error codes, `Depends()` injection, and `TestClient` fixture conventions.
 - Phase 4: Added `test-api` CI job that installs `.[dev,api]` and runs `tests/unit/api/` in isolation from the core test environment.
 - Phase 4: Added `api/schemas.py` — six Pydantic v2 models (`MetaSingle`, `MetaList`, `ErrorDetail`, `ErrorEnvelope`, `HealthData`, `HealthResponse`) forming the standardized response envelope.
@@ -47,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `api/routers/__init__.py` — registered `health_router`; switched from relative to absolute imports.
 - `README.md`, `ARCHITECTURE.md`, `CONTRIBUTING.md` — updated API response envelope documentation to include `count` on list responses and the error envelope shape.
 - `api/main.py` — registered all four new routers (`stocks`, `indices`, `sectors`, `market`) via `app.include_router()`.
+- `api/requirements.txt` — pinned `psxdata==0.1.0a3` (exact prerelease pin required for pip to install without `--pre`); tightened all other deps to compatible-release specifiers (`~=`).
+- `README.md` — added "Running the API with Docker" section with build, run, port-override, and health-check examples.
 
 ---
 

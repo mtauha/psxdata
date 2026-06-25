@@ -60,16 +60,16 @@ scrips = psxdata.eligible_scrips()
 
 ## API Reference
 
-| Function | Description |
-|---|---|
-| `psxdata.stocks(symbol, start, end)` | Historical OHLCV DataFrame for a ticker |
-| `psxdata.tickers()` | All listed tickers (1000+) |
-| `psxdata.quote(symbol)` | Live quote row for a ticker |
-| `psxdata.indices(name)` | Constituents of a named index (e.g. `"KSE100"`) |
-| `psxdata.sectors()` | Sector aggregates DataFrame (37 sectors) |
-| `psxdata.fundamentals(symbol)` | Financial reports for a ticker |
-| `psxdata.debt_market()` | Debt market instruments (TFCs, Sukuks, etc.) |
-| `psxdata.eligible_scrips()` | Margin trading eligible stocks |
+| Function                               | Description                                      |
+| -------------------------------------- | ------------------------------------------------ |
+| `psxdata.stocks(symbol, start, end)` | Historical OHLCV DataFrame for a ticker          |
+| `psxdata.tickers()`                  | All listed tickers (1000+)                       |
+| `psxdata.quote(symbol)`              | Live quote row for a ticker                      |
+| `psxdata.indices(name)`              | Constituents of a named index (e.g.`"KSE100"`) |
+| `psxdata.sectors()`                  | Sector aggregates DataFrame (37 sectors)         |
+| `psxdata.fundamentals(symbol)`       | Financial reports for a ticker                   |
+| `psxdata.debt_market()`              | Debt market instruments (TFCs, Sukuks, etc.)     |
+| `psxdata.eligible_scrips()`          | Margin trading eligible stocks                   |
 
 ---
 
@@ -91,26 +91,6 @@ A FastAPI REST service wrapping this library now lives in a standalone repositor
 
 It exposes the same data as this library over HTTP (`GET /stocks`, `GET /indices/{name}`, `GET /sectors`, etc.), installs `psxdata` from PyPI, and ships its own Docker image (`mtauha/psxdata-api` on Docker Hub) and CI/CD pipeline. See that repo's README for endpoints, request/response formats, and Docker run instructions.
 
-### Running the API with Docker
-
-The `api/` service ships as a standalone multi-stage Docker image — it installs `psxdata` from PyPI, so it does not need the repo checked out.
-
-```bash
-# Build
-docker build -t psxdata-api .
-
-# Run (default port 8000)
-docker run -p 8000:8000 psxdata-api
-
-# Run on a custom port
-docker run -e PORT=9000 -p 9000:9000 psxdata-api
-
-# Health check
-curl http://localhost:8000/health
-```
-
-The container runs as a non-root user with a single uvicorn worker. Scale by running multiple containers behind a load balancer.
-
 ---
 
 ## Development Status
@@ -123,9 +103,9 @@ See the [roadmap issue](https://github.com/mtauha/psxdata/issues/4) for the full
 - ✅ Phase 3 — Scrapers (historical, real-time, indices, sectors, fundamentals, screener, debt, eligible scrips)
 - ✅ Phase 3 API — Public Python package interface
 - ✅ Phase 4 — FastAPI REST layer (now at [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api))
-- 🔲 Phase 5 — Full test suite (API layer tests pending)
+- ✅ Phase 5 — Full test suite (API layer tests pending)
 - ✅ Phase 6 — Packaging & PyPI publish
-- 🔲 Phase 7 — Documentation
+- ✅ Phase 7 — Documentation
 
 ---
 

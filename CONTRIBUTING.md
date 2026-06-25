@@ -21,8 +21,10 @@ Verify your setup:
 
 ```bash
 pytest tests/unit/ -v           # Should pass (no network required)
-ruff check psxdata/ api/        # Should return no errors
+ruff check psxdata/              # Should return no errors
 ```
+
+> **Looking to contribute to the REST API?** That code now lives in [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api) — open issues and PRs there instead.
 
 ---
 

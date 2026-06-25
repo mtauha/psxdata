@@ -15,7 +15,7 @@ Phase 2     ✅  Core engineering (BaseScraper, parsers, cache, utils)
 Phase 3     ✅  All 8 PSX endpoint scrapers
 Phase 3 API ✅  Public Python package interface
 ─────────────────────────────────────────────────────────────────
-Phase 4     🔲  FastAPI REST layer            ← open for contributions
+Phase 4     ➡️  FastAPI REST layer (moved to mtauha/psxdata-api)
 Phase 5     🔲  Full test suite               ← open for contributions
 Phase 6     🔲  Packaging, Docker, CI/CD      ← depends on 4 + 5
 Phase 7     🔲  Documentation                 ← can start alongside 6
@@ -90,7 +90,9 @@ psxdata.market.eligible_scrips()
 
 ### Track A
 
-#### 🔲 Phase 4 — FastAPI REST Layer ([#8](https://github.com/mtauha/psxdata/issues/8))
+#### ➡️ Phase 4 — FastAPI REST Layer (moved to [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api)) ([#8](https://github.com/mtauha/psxdata/issues/8))
+
+This phase has moved to its own repository: [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api). It consumes `psxdata` as a published PyPI dependency. The sub-tasks below are kept for historical reference and remain linked to their original issues.
 
 Build `api/` wrapping the Python package. All responses follow:
 

@@ -95,11 +95,6 @@ psxdata/
 │   │   └── disk_cache.py       # diskcache wrapper, parquet format, TTL logic
 │   └── models/
 │       └── schemas.py          # Pydantic v2 models for all data types
-├── api/                        # FastAPI REST service (optional, pip install psxdata[api])
-│   ├── main.py                 # FastAPI app entrypoint, CORS, rate limiting setup
-│   ├── routers/                # One router per data type, mirrors psxdata public API
-│   ├── dependencies.py         # Shared FastAPI dependencies (cache, rate limiter)
-│   └── schemas.py              # Request/response Pydantic models
 ├── tests/
 │   ├── unit/                   # Fast, no network — parsers, validators, cache, utils
 │   ├── integration/            # Real PSX endpoints — marked @pytest.mark.integration
@@ -120,8 +115,7 @@ psxdata/
 ├── CHANGELOG.md                # Keep a Changelog format
 ├── SECURITY.md                 # Private vulnerability disclosure
 ├── LICENSE                     # MIT
-├── pyproject.toml              # Package metadata, dependencies, tool config
-└── docker-compose.yml          # Run the FastAPI service locally
+└── pyproject.toml              # Package metadata, dependencies, tool config
 ```
 
 ---
@@ -178,28 +172,9 @@ Playwright is retained for tooling only (endpoint discovery). Scrapers use `_get
 - `html.py` — extracts `<th>` tags dynamically; never assumes fixed column count or position
 - `normalizers.py` — multi-format date parsing with `dateutil` fuzzy fallback; type coercion
 
-### FastAPI Layer (`api/`)
+### FastAPI Layer
 
-```
-GET  /health
-GET  /stocks                                    # all tickers
-GET  /stocks?index=KSE-100
-GET  /stocks/{symbol}/historical?start=&end=
-GET  /stocks/{symbol}/quote
-GET  /stocks/{symbol}/fundamentals
-GET  /indices
-GET  /indices/{name}/historical?start=&end=
-GET  /sectors
-GET  /sectors/{name}/stocks
-GET  /debt-market
-GET  /eligible-scrips
-```
-
-All responses: `{"data": ..., "meta": {"timestamp": ..., "cached": bool}}` — list responses also include `"count": N` in meta.
-
-Errors: `{"error": {"status": 404, "code": "not_found", "message": "..."}}`
-
-Rate limit: 60 req/min per IP via `slowapi`. CORS: all origins. No auth required.
+The REST API has moved to a standalone repository: [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api). It consumes this library purely as a published PyPI dependency (`pip install psxdata`) and has no source-level coupling to this repo. See that repo's ARCHITECTURE notes for its design.
 
 ---
 

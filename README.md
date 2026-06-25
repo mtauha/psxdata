@@ -8,6 +8,8 @@
 
 **[Full documentation at psxdata.mintlify.app](https://psxdata.mintlify.app)**
 
+> **Deprecated:** ReadTheDocs hosting at [psxdata.readthedocs.io](https://psxdata.readthedocs.io) is no longer the primary documentation source and may be removed in a future release.
+
 **psxdata** is a Python library for downloading Pakistan Stock Exchange (PSX) data — historical OHLCV prices, real-time quotes, KSE-100 index constituents, sector summaries, fundamentals, debt market instruments, and margin-eligible stocks. Free, open-source, and actively maintained.
 
 <details>

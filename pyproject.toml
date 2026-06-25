@@ -37,12 +37,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-api = [
-    "fastapi>=0.100",
-    "uvicorn>=0.22",
-    "slowapi>=0.1",
-    "redis>=4.5",
-]
 dev = [
     "pytest>=7",
     "pytest-cov",

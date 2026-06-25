@@ -24,7 +24,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -e ".[dev,api]"
+          pip install -e ".[dev]"
 
       - name: Run integration tests
         run: |

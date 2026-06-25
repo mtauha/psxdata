@@ -23,29 +23,13 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -e ".[dev,api]"
+        run: pip install -e ".[dev]"
 
       - name: Run ruff
-        run: |
-          TARGETS=""
-          [ -d psxdata ] && TARGETS="$TARGETS psxdata/"
-          [ -d api ] && TARGETS="$TARGETS api/"
-          if [ -n "$TARGETS" ]; then
-            ruff check $TARGETS
-          else
-            echo "No source dirs yet — skipping ruff"
-          fi
+        run: ruff check psxdata/
 
       - name: Run mypy
-        run: |
-          TARGETS=""
-          [ -d psxdata ] && TARGETS="$TARGETS psxdata/"
-          [ -d api ] && TARGETS="$TARGETS api/"
-          if [ -n "$TARGETS" ]; then
-            mypy $TARGETS
-          else
-            echo "No source dirs yet — skipping mypy"
-          fi
+        run: mypy psxdata/
 
   test:
     name: test (${{ matrix.python-version }})
@@ -70,35 +54,7 @@ jobs:
       - name: Run unit tests
         run: |
           if [ -d tests/unit ]; then
-            pytest tests/unit/ -v --tb=short --ignore=tests/unit/api
+            pytest tests/unit/ -v --tb=short
           else
             echo "tests/unit/ not yet created — no tests to run"
-          fi
-
-  test-api:
-    name: test-api (${{ matrix.python-version }})
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: pip install -e ".[dev,api]"
-
-      - name: Run API unit tests
-        run: |
-          if [ -d tests/unit/api ] && [ -n "$(find tests/unit/api -name 'test_*.py' | head -1)" ]; then
-            pytest tests/unit/api/ -v --tb=short
-          else
-            echo "tests/unit/api/ not yet created — no tests to run"
           fi

@@ -8,6 +8,7 @@ jobs:
   check-issue-link:
     name: Check PR links an issue
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     permissions:
       pull-requests: read
     steps:

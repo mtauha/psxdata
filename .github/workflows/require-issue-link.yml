@@ -8,7 +8,6 @@ jobs:
   check-issue-link:
     name: Check PR links an issue
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
     permissions:
       pull-requests: read
     steps:
@@ -16,6 +15,10 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
+            if (context.actor === 'dependabot[bot]') {
+              core.info('Dependabot PR — skipping linked issue check.');
+              return;
+            }
             const body = context.payload.pull_request.body || '';
             const linked = /(?:closes|fixes|resolves)\s+#\d+/i.test(body);
             if (!linked) {

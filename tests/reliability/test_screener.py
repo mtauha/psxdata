@@ -45,6 +45,15 @@ class TestScreenerScraper:
         assert len(non_null) > 0
         pd.to_numeric(non_null, errors="raise")  # raises if any value is a string name
 
+    def test_change_pct_column_is_numeric(self):
+        """change_pct must be coerced to float, not left as a raw percent string."""
+        scraper = ScreenerScraper()
+        with patch.object(scraper._session, "request", return_value=_mock_response(FIXTURE)):
+            df = scraper.fetch()
+        non_null = df["change_pct"].dropna()
+        assert len(non_null) > 0
+        assert pd.api.types.is_numeric_dtype(df["change_pct"])
+
     def test_empty_html_returns_empty_dataframe(self):
         scraper = ScreenerScraper()
         with patch.object(scraper._session, "request", return_value=_mock_response("<html></html>")):

@@ -50,7 +50,7 @@ class ScreenerScraper(BaseScraper):
         logger.debug("Parsed %d screener rows", len(df))
 
         numeric_cols = ("market_cap", "price", "pe_ratio", "dividend_yield",
-                        "free_float", "volume_avg_30d", "change_1y_pct", "sector")
+                        "free_float", "volume_avg_30d", "change_pct", "change_1y_pct", "sector")
         for col in numeric_cols:
             if col in df.columns:
                 df[col] = df[col].apply(coerce_numeric)

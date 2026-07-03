@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "psxdata"
-version = "0.1.0a4"
+version = "0.1.0a5"
 description = "Free Python library for Pakistan Stock Exchange (PSX) data — historical prices, live quotes, KSE-100, sectors, indices"
 readme = "README.md"
 requires-python = ">=3.11"

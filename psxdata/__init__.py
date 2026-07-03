@@ -13,7 +13,7 @@ from psxdata.client import (
 )
 from psxdata.scrapers.base import BaseScraper
 
-__version__ = "0.1.0a4"
+__version__ = "0.1.0a5"
 
 __all__ = [
     "BaseScraper",

@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.0a5] - 2026-07-03
+
+### Fixed
+
+- `psxdata/scrapers/screener.py`: `change_pct` was missing from the `numeric_cols` coercion tuple, leaving it as a raw percent string (e.g. `"1.24%"`) instead of a float. This broke every `GET /stocks/{symbol}/quote` call in the `psxdata-api` service, whose `QuoteData` schema requires `change_pct: float | None` — confirmed failing in production. Added `"change_pct"` to `numeric_cols` and a regression test asserting the column is numeric after `ScreenerScraper.fetch()`.
+
+---
+
 ## [0.1.0a4] - 2026-07-03
 
 ### Changed
@@ -103,7 +111,8 @@ First PyPI release. Core scraping library complete for all 8 PSX endpoints with 
 
 ---
 
-[Unreleased]: https://github.com/mtauha/psxdata/compare/v0.1.0a4...HEAD
+[Unreleased]: https://github.com/mtauha/psxdata/compare/v0.1.0a5...HEAD
+[0.1.0a5]: https://github.com/mtauha/psxdata/compare/v0.1.0a4...v0.1.0a5
 [0.1.0a4]: https://github.com/mtauha/psxdata/compare/v0.1.0a3...v0.1.0a4
 [0.1.0a3]: https://github.com/mtauha/psxdata/compare/v0.1.0a2...v0.1.0a3
 [0.1.0a2]: https://github.com/mtauha/psxdata/compare/v0.1.0a1...v0.1.0a2

@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.1.0a4] - 2026-07-03
 
 ### Changed
 
@@ -103,7 +103,8 @@ First PyPI release. Core scraping library complete for all 8 PSX endpoints with 
 
 ---
 
-[Unreleased]: https://github.com/mtauha/psxdata/compare/v0.1.0a3...HEAD
+[Unreleased]: https://github.com/mtauha/psxdata/compare/v0.1.0a4...HEAD
+[0.1.0a4]: https://github.com/mtauha/psxdata/compare/v0.1.0a3...v0.1.0a4
 [0.1.0a3]: https://github.com/mtauha/psxdata/compare/v0.1.0a2...v0.1.0a3
 [0.1.0a2]: https://github.com/mtauha/psxdata/compare/v0.1.0a1...v0.1.0a2
 [0.1.0a1]: https://github.com/mtauha/psxdata/releases/tag/v0.1.0a1

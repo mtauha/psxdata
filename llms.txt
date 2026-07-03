@@ -26,6 +26,7 @@ Requires Python 3.11+
 
 - `psxdata.stocks(symbol, start, end)` — Historical OHLCV DataFrame for a PSX ticker
 - `psxdata.tickers()` — All 1000+ listed PSX tickers
+- `psxdata.symbols()` — Symbol/sector/name metadata, optionally filtered
 - `psxdata.quote(symbol)` — Live quote (price, volume, sector, market cap)
 - `psxdata.indices(name)` — Constituents of a named index (KSE100, KSE30, KMI30, and 15 others)
 - `psxdata.sectors()` — Sector aggregates for all 37 PSX sectors
@@ -56,14 +57,8 @@ Requires Python 3.11+
 - `GET /eligible-scrips` — Margin eligible stocks (9 tables)
 - `GET /symbols` — All listed symbols with metadata
 
-## REST API (Planned — Phase 4)
+## REST API
 
-A FastAPI layer is under development. Planned endpoints:
-- `GET /stocks/{symbol}/historical`
-- `GET /stocks/{symbol}/quote`
-- `GET /indices/{name}`
-- `GET /sectors`
-- `GET /debt-market`
-- `GET /eligible-scrips`
+A FastAPI REST layer is live at [mtauha/psxdata-api](https://github.com/mtauha/psxdata-api) (v0.1.2), deployed at https://psxdata-api.fastapicloud.dev. It wraps this library over HTTP with endpoints for stocks, quotes, indices, sectors, debt market, and eligible scrips. Docs: https://psxdata.mintlify.app/rest-api/introduction.
 
 All responses: `{"data": ..., "meta": {"timestamp": "...", "cached": bool}}`

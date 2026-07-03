@@ -29,6 +29,8 @@ These wrap a lazy shared `PSXClient` instance. They are the recommended entry po
 
 ::: psxdata.client.tickers
 
+::: psxdata.client.symbols
+
 ::: psxdata.client.indices
 
 ::: psxdata.client.sectors

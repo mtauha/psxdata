@@ -66,6 +66,7 @@ scrips = psxdata.eligible_scrips()
 | -------------------------------------- | ------------------------------------------------ |
 | `psxdata.stocks(symbol, start, end)` | Historical OHLCV DataFrame for a ticker          |
 | `psxdata.tickers()`                  | All listed tickers (1000+)                       |
+| `psxdata.symbols()`                  | Symbol/sector/name metadata, optionally filtered |
 | `psxdata.quote(symbol)`              | Live quote row for a ticker                      |
 | `psxdata.indices(name)`              | Constituents of a named index (e.g.`"KSE100"`) |
 | `psxdata.sectors()`                  | Sector aggregates DataFrame (37 sectors)         |

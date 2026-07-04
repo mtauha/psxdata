@@ -7,18 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0a3] - 2026-04-20
-
-### Added
-
-- Phase 7: MkDocs + Material documentation site at https://psxdata.readthedocs.io — 12 pages covering getting started, 6 tutorial guides, full API reference, changelog, and contributing.
-- Phase 7: `.readthedocs.yaml` v2 build config for Read the Docs free-tier hosting.
-- Phase 7: `examples/quickstart.py` — runnable demo script covering all 5 core functions.
-- Phase 7: Expanded all 8 module-level function docstrings (Args, Returns, Raises, Example) for clean API reference rendering via mkdocstrings.
-
-### Changed
-
-- `pyproject.toml`: added `docs` optional dependency group (`mkdocs-material`, `mkdocstrings[python]`), `Documentation` URL, and updated package description.
+## [Unreleased]
 
 ---
 
@@ -71,7 +60,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased — pre-Phase 4]
+## [0.1.0a3] - 2026-04-20
+
+### Added
+
+- Phase 7: MkDocs + Material documentation site at https://psxdata.readthedocs.io — 12 pages covering getting started, 6 tutorial guides, full API reference, changelog, and contributing.
+- Phase 7: `.readthedocs.yaml` v2 build config for Read the Docs free-tier hosting.
+- Phase 7: `examples/quickstart.py` — runnable demo script covering all 5 core functions.
+- Phase 7: Expanded all 8 module-level function docstrings (Args, Returns, Raises, Example) for clean API reference rendering via mkdocstrings.
+
+### Changed
+
+- `pyproject.toml`: added `docs` optional dependency group (`mkdocs-material`, `mkdocstrings[python]`), `Documentation` URL, and updated package description.
+
+---
+
+## [0.1.0a1] - 2026-04-19
+
+First PyPI release. Core scraping library complete for all 8 PSX endpoints with caching, validation, and a clean public Python API.
 
 ### Added
 
@@ -102,12 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Corrected `ARCHITECTURE.md` scraper→endpoint map: `/screener` and `/trading-panel` use `requests`+BeautifulSoup; `/sector-summary` and `/financial-reports` use Playwright.
 - `CHANGELOG.md`: Added entries for Phases 3 through 6.
-
----
-
-## [0.1.0a1] — 2026-04-19
-
-First PyPI release. Core scraping library complete for all 8 PSX endpoints with caching, validation, and a clean public Python API.
 
 ---
 

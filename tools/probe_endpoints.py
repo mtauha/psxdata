@@ -152,9 +152,16 @@ def load_baseline() -> dict:
     return json.loads(BASELINE_PATH.read_text(encoding="utf-8"))
 
 
-def diff_schemas(results: list[dict], baseline: dict) -> list[str]:
-    """Compare live results against baseline, return list of drift messages."""
+def diff_schemas(results: list[dict], baseline: dict) -> tuple[list[str], list[str]]:
+    """Compare live results against baseline.
+
+    Returns (diffs, row_count_notes). `diffs` covers structural drift
+    (columns, status, endpoint presence) and should fail CI. Row count on
+    these boards reflects live order-book activity, not the API contract,
+    so it's reported separately and never fails the check on its own.
+    """
     diffs = []
+    row_count_notes = []
     base_eps = baseline.get("endpoints", {})
 
     info = []  # informational only — new endpoints not in baseline
@@ -177,16 +184,16 @@ def diff_schemas(results: list[dict], baseline: dict) -> list[str]:
         for h in old_h - new_h:
             diffs.append(f"- {name}: REMOVED COLUMN '{h}'")
 
-        # Row count drift (> 50% change)
+        # Row count (> 50% change) — informational, not schema drift
         old_count = old.get("row_count", 0)
         new_count = r.get("row_count", 0)
         if old_count == 0 and new_count > 0:
-            diffs.append(f"! {name}: ROW COUNT was 0, now {new_count} (table appeared)")
+            row_count_notes.append(f"~ {name}: ROW COUNT was 0, now {new_count} (table appeared)")
         elif old_count > 0:
             pct = abs(new_count - old_count) / old_count
             if pct > 0.5:
-                diffs.append(
-                    f"! {name}: ROW COUNT {old_count} -> {new_count} "
+                row_count_notes.append(
+                    f"~ {name}: ROW COUNT {old_count} -> {new_count} "
                     f"({pct:.0%} change)"
                 )
 
@@ -207,7 +214,7 @@ def diff_schemas(results: list[dict], baseline: dict) -> list[str]:
         for msg in info:
             print(f"    {msg}")
 
-    return diffs
+    return diffs, row_count_notes
 
 
 def write_report(results: list[dict]) -> Path:
@@ -315,7 +322,11 @@ def main() -> None:
 
     if args.diff:
         baseline = load_baseline()
-        drifts = diff_schemas(results, baseline)
+        drifts, row_count_notes = diff_schemas(results, baseline)
+        if row_count_notes:
+            print(f"\n{len(row_count_notes)} row count change(s) (informational, not drift):")
+            for note in row_count_notes:
+                print(f"  {note}")
         if drifts:
             print(f"\n{len(drifts)} schema drift(s) detected:")
             for d in drifts:

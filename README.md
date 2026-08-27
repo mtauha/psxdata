@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/mtauha/psxdata/actions/workflows/ci.yml/badge.svg)](https://github.com/mtauha/psxdata/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/psxdata)](https://pypi.org/project/psxdata/)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/psxdata?period=total&units=INTERNATIONAL_SYSTEM&left_color=GREY&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/psxdata)
 [![Documentation](https://img.shields.io/badge/docs-mintlify-blue)](https://psxdata.mintlify.app)
 [![Python](https://img.shields.io/pypi/pyversions/psxdata)](https://pypi.org/project/psxdata/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -85,6 +86,12 @@ Existing solutions for PSX data tend to hardcode date formats and column positio
 - **Exponential backoff retries** — 3 attempts, 1s/2s delays
 - **Disk cache** (`~/.psxdata/cache/`) — historical data cached forever, live data for 15 min
 - **Data validation** — OHLC constraint checks, duplicate/future date detection
+
+---
+
+## Data Availability
+
+`psxdata` supports **daily historical OHLCV bars** and **live quote snapshots** only. Intraday historical data (1-minute, 5-minute, 15-minute bars, etc.) is not available because PSX does not publicly expose historical intraday data through any official channel — the DPS/KATS feeds only provide real-time data, not a historical intraday archive. If PSX exposes such an endpoint in the future, support may be added.
 
 ---
 

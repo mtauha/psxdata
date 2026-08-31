@@ -11,6 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.0] - 2026-08-31
+
+First stable release. The public API (`PSXClient`, `stocks`, `tickers`, `quote`, `indices`, `sectors`, `fundamentals`, `debt_market`, `eligible_scrips`, `symbols`) has been stable since `0.1.0a1` with no breaking changes across five alpha releases and real-world use — from here, breaking changes will be reserved for major version bumps per [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+### Added
+
+- `README.md`: Data Availability section clarifying that only daily historical OHLCV and live quote snapshots are supported, since PSX does not expose a historical intraday data feed.
+- `README.md`: PyPI downloads badge.
+
+### Fixed
+
+- `tools/probe_endpoints.py`: `diff_schemas()` no longer fails the schema-drift CI check on row-count-only changes for live order-book boards (`trading_board_reg_gem`, `trading_board_bnb_bnb`), whose row counts swing with market activity rather than API schema drift. Row-count swings are now reported separately as informational notes; column, status, and endpoint-presence drift still fail the check.
+
+### Changed
+
+- Removed the automated Claude Code Review GitHub Actions workflow.
+- Bumped `actions/setup-python` from 6 to 7 in CI workflows.
+
+---
+
 ## [0.1.0a5] - 2026-07-03
 
 ### Fixed

@@ -298,6 +298,22 @@ class TestSectors:
 # fundamentals()
 # ---------------------------------------------------------------------------
 
+class TestScreener:
+    def test_screener_returns_dataframe(self, client, screener_df):
+        """screener() returns the full, unfiltered screener DataFrame."""
+        client._screener.fetch.return_value = screener_df
+        result = client.screener(cache=False)
+        client._screener.fetch.assert_called_once()
+        pd.testing.assert_frame_equal(result, screener_df)
+
+    def test_screener_shares_cache_with_quote(self, client, screener_df):
+        """screener() and quote() share the 'screener_all' cache key."""
+        client._screener.fetch.return_value = screener_df
+        client.quote("ENGRO", cache=True)
+        client.screener(cache=True)
+        client._screener.fetch.assert_called_once()
+
+
 class TestFundamentals:
     def test_fundamentals_no_filter(self, client, fundamentals_df):
         """fundamentals() with no symbol returns all rows."""

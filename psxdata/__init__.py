@@ -6,6 +6,7 @@ from psxdata.client import (
     fundamentals,
     indices,
     quote,
+    screener,
     sectors,
     stocks,
     symbols,
@@ -13,7 +14,7 @@ from psxdata.client import (
 )
 from psxdata.scrapers.base import BaseScraper
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 __all__ = [
     "BaseScraper",
@@ -27,4 +28,5 @@ __all__ = [
     "debt_market",
     "eligible_scrips",
     "symbols",
+    "screener",
 ]

@@ -186,6 +186,39 @@ class PSXClient:
         match = screener_df[screener_df["symbol"] == symbol.upper()]
         return match.reset_index(drop=True)
 
+    def screener(self, cache: bool = True) -> pd.DataFrame:
+        """Return the full PSX screener table, unfiltered.
+
+        Shares the 'screener_all' cache key with quote(), so calling both
+        never results in a double fetch.
+
+        Args:
+            cache: If ``False``, bypass cache and always fetch from PSX.
+
+        Returns:
+            DataFrame with columns: symbol, sector, listed_in, market_cap,
+            price, pe_ratio, dividend_yield, free_float, volume_avg_30d,
+            change_1y_pct (~729 rows, one per PSX-listed symbol).
+            Empty DataFrame if PSX returns no data.
+
+        Raises:
+            PSXConnectionError: Network failure after retries.
+            PSXServerError: 5xx after retries.
+        """
+        cache_key = "screener_all"
+        df: pd.DataFrame | None = None
+
+        if cache:
+            df = self._cache.get(cache_key)
+
+        if df is None:
+            logger.debug("Fetching screener from PSX")
+            df = self._screener.fetch()
+            if cache and not df.empty:
+                self._cache.set(cache_key, df, ttl=CACHE_TTL_TODAY)
+
+        return df if df is not None else pd.DataFrame()
+
     def tickers(self, index: str | None = None, cache: bool = True) -> list[str]:
         """Return PSX ticker symbols, optionally filtered to an index.
 
@@ -506,6 +539,34 @@ def quote(symbol: str, cache: bool = True) -> pd.DataFrame:
         print(q.T)
     """
     return _client().quote(symbol, cache=cache)
+
+
+def screener(cache: bool = True) -> pd.DataFrame:
+    """Return the full PSX screener table, unfiltered.
+
+    Shares the 'screener_all' cache key with quote(), so calling both
+    never results in a double fetch.
+
+    Args:
+        cache: If ``False``, bypass cache and always fetch from PSX.
+
+    Returns:
+        DataFrame with columns: symbol, sector, listed_in, market_cap,
+        price, pe_ratio, dividend_yield, free_float, volume_avg_30d,
+        change_1y_pct (~729 rows, one per PSX-listed symbol).
+        Empty DataFrame if PSX returns no data.
+
+    Raises:
+        PSXConnectionError: Network failure after retries.
+        PSXServerError: 5xx after retries.
+
+    Example::
+
+        import psxdata
+        df = psxdata.screener()
+        print(df.nlargest(10, "market_cap")[["symbol", "market_cap"]])
+    """
+    return _client().screener(cache=cache)
 
 
 def tickers(index: str | None = None, cache: bool = True) -> list[str]:

@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-09-02
+
+### Added
+
+- `PSXClient.screener()` and top-level `psxdata.screener()` — return the full, unfiltered PSX screener table (all ~729 symbols, all columns). Shares the `"screener_all"` cache key with `quote()`, so calling both never results in a double fetch.
+
 ## [1.0.0] - 2026-08-31
 
 First stable release. The public API (`PSXClient`, `stocks`, `tickers`, `quote`, `indices`, `sectors`, `fundamentals`, `debt_market`, `eligible_scrips`, `symbols`) has been stable since `0.1.0a1` with no breaking changes across five alpha releases and real-world use — from here, breaking changes will be reserved for major version bumps per [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

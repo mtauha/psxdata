@@ -118,7 +118,7 @@ class BaseScraper:
                     if provider.get_token() is not None:
                         auth_retry_used = True
                         logger.debug("403 on %s; refreshed %s, retrying once", url, TOKEN_HEADER)
-                        continue  # same attempt number - auth retry is not a 5xx retry
+                        continue  # same attempt number — auth retry is not a 5xx retry
                     raise PSXAuthError(
                         f"PSX auth error (403) on {url}; {TOKEN_HEADER} token was "
                         "rejected and could not be refreshed"
@@ -143,7 +143,7 @@ class BaseScraper:
                         time.sleep(RETRY_DELAYS[attempt - 1])  # delays[0]=1s, delays[1]=2s
                         attempt += 1
                         continue
-                    raise last_exc  # final attempt - raise immediately, no sleep
+                    raise last_exc  # final attempt — raise immediately, no sleep
                 if 400 <= resp.status_code < 500:
                     raise PSXParseError(
                         f"Unexpected {resp.status_code} from {url}"
@@ -166,7 +166,7 @@ class BaseScraper:
             except (PSXRateLimitError, PSXAuthError, PSXParseError):
                 raise  # no retry
 
-        # Safety net - loop always returns or raises above
+        # Safety net — loop always returns or raises above
         raise PSXServerError(f"Exhausted retries for {url}")
 
     def _get(self, endpoint: str, **kwargs: Any) -> requests.Response:

@@ -20,8 +20,10 @@ import requests
 
 from psxdata.constants import (
     BASE_URL,
+    MAX_RETRIES,
     REQUEST_HEADERS,
     REQUEST_TIMEOUT,
+    RETRY_DELAYS,
     TOKEN_HEADER,
     TOKEN_PAGE,
     TOKEN_RETRY_BACKOFF,
@@ -52,7 +54,7 @@ def extract_token(html: str) -> str | None:
     except ValueError:
         return None
     token = payload.get("_k") if isinstance(payload, dict) else None
-    if not isinstance(token, str) or not _TOKEN_RE.match(token):
+    if not isinstance(token, str) or not _TOKEN_RE.fullmatch(token):
         return None
     return token
 
@@ -65,19 +67,24 @@ class TokenProvider:
     """Obtain, cache and refresh the PSX ``X-Req-Id`` request token.
 
     Thread-safe. One fetch of ``TOKEN_PAGE`` per ``TOKEN_TTL`` seconds; after a
-    failed fetch, no new attempt for ``TOKEN_RETRY_BACKOFF`` seconds. Never
-    raises - failures log a warning and yield ``None`` (fail-open).
+    failed fetch, no new attempt for ``TOKEN_RETRY_BACKOFF`` seconds. A single
+    fetch retries transient failures (network errors and 5xx responses) up to
+    ``MAX_RETRIES`` times with the same backoff delays used for data requests.
+    Never raises - failures log a warning and yield ``None`` (fail-open).
 
     Args:
         session: Session used for the page fetch. Defaults to a new session with
             ``REQUEST_HEADERS`` minus ``X-Requested-With`` (a plain page load).
         time_func: Monotonic clock. Inject a fake for deterministic tests.
+        sleep_func: Callable to sleep N seconds between retry attempts.
+            Defaults to time.sleep. Inject a fake for deterministic tests.
     """
 
     def __init__(
         self,
         session: requests.Session | None = None,
         time_func: Callable[[], float] = _time.monotonic,
+        sleep_func: Callable[[float], None] = _time.sleep,
     ) -> None:
         if session is None:
             session = requests.Session()
@@ -86,6 +93,7 @@ class TokenProvider:
             )
         self._session = session
         self._time = time_func
+        self._sleep = sleep_func
         self._lock = threading.Lock()
         self._token: str | None = None
         self._fetched_at: float | None = None
@@ -128,24 +136,61 @@ class TokenProvider:
         return None
 
     def _fetch(self) -> str | None:
+        """Fetch and parse the token page, retrying transient failures.
+
+        Retries only on ``requests.RequestException`` or a 5xx status, up to
+        MAX_RETRIES attempts, sleeping RETRY_DELAYS[attempt-1] in between (no
+        sleep after the final attempt). Any other non-200 status, a 200 page
+        without a token, or an unexpected error while parsing the response
+        fails immediately without retry.
+        """
         url = BASE_URL + TOKEN_PAGE
-        try:
-            resp = self._session.get(url, timeout=REQUEST_TIMEOUT)
-        except requests.RequestException as exc:
-            self._fail(url, f"request failed: {exc}")
-            return None
-        if resp.status_code != 200:
-            self._fail(url, f"HTTP {resp.status_code}")
-            return None
-        token = extract_token(resp.text)
-        if token is None:
-            self._fail(url, "window.__ps._k not found in page")
-            return None
-        self._token = token
-        self._fetched_at = self._time()
-        self._failed_at = None
-        logger.debug("Fetched PSX request token %s", _redact(token))
-        return token
+        last_reason = "exhausted retries"
+        attempt = 1
+        while attempt <= MAX_RETRIES:
+            try:
+                resp = self._session.get(url, timeout=REQUEST_TIMEOUT)
+            except requests.RequestException as exc:
+                last_reason = f"request failed: {exc}"
+                if attempt < MAX_RETRIES:
+                    self._sleep(RETRY_DELAYS[attempt - 1])
+                    attempt += 1
+                    continue
+                self._fail(url, last_reason)
+                return None
+
+            if resp.status_code >= 500:
+                last_reason = f"HTTP {resp.status_code}"
+                if attempt < MAX_RETRIES:
+                    self._sleep(RETRY_DELAYS[attempt - 1])
+                    attempt += 1
+                    continue
+                self._fail(url, last_reason)
+                return None
+
+            if resp.status_code != 200:
+                self._fail(url, f"HTTP {resp.status_code}")
+                return None
+
+            try:
+                token = extract_token(resp.text)
+            except Exception as exc:  # noqa: BLE001 - fail-open guarantee, never raise
+                self._fail(url, f"unexpected error: {exc!r}")
+                return None
+
+            if token is None:
+                self._fail(url, "window.__ps._k not found in page")
+                return None
+
+            self._token = token
+            self._fetched_at = self._time()
+            self._failed_at = None
+            logger.debug("Fetched PSX request token %s", _redact(token))
+            return token
+
+        # Safety net — loop always returns above
+        self._fail(url, last_reason)
+        return None
 
     def _fail(self, url: str, reason: str) -> None:
         self._token = None

@@ -25,7 +25,12 @@ class PSXServerError(PSXUnavailableError):
 
 
 class PSXAuthError(PSXDataError):
-    """PSX returned 401 or 403 — authentication or authorisation failure."""
+    """PSX returned 401 or 403 - authentication or authorisation failure.
+
+    Since 1.1.1 a 403 is first retried once with a refreshed ``X-Req-Id``
+    request token; this error is raised if that retry also fails or no token
+    could be obtained.
+    """
 
 
 class PSXRateLimitError(PSXDataError):

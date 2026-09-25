@@ -1,9 +1,16 @@
 """Unit tests for psxdata.scrapers.token - network-free."""
+import logging
+import threading
+import time
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
+import requests
 
-from psxdata.scrapers.token import extract_token
+from psxdata.constants import REQUEST_HEADERS, TOKEN_RETRY_BACKOFF, TOKEN_TTL
+from psxdata.scrapers import token as token_module
+from psxdata.scrapers.token import TokenProvider, extract_token, get_default_provider
 
 FIXTURES = Path(__file__).parent.parent / "fixtures"
 FIXTURE_TOKEN = "JPlHf0jIKj_s7l-A_KlM4gGDz651a_5sknoT4WozNjM"
@@ -41,3 +48,157 @@ class TestExtractToken:
     def test_returns_none_when_k_not_a_string(self):
         html = '<script>window.__ps = {"_k": 12345678901234567890};</script>'
         assert extract_token(html) is None
+
+
+PAGE = f'<script>window.__ps = {{"_k":"{FIXTURE_TOKEN}"}};</script>'
+OTHER_TOKEN = "k0JLxybjAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAjG0"
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def _page_response(status: int = 200, text: str = PAGE) -> MagicMock:
+    resp = MagicMock(spec=requests.Response)
+    resp.status_code = status
+    resp.text = text
+    return resp
+
+
+def _provider(*responses, clock=None):
+    session = MagicMock(spec=requests.Session)
+    session.get.side_effect = list(responses)
+    return TokenProvider(session=session, time_func=clock or FakeClock()), session
+
+
+class TestTokenProvider:
+    def test_fetches_once_then_serves_from_cache(self):
+        provider, session = _provider(_page_response())
+        assert provider.get_token() == FIXTURE_TOKEN
+        assert provider.get_token() == FIXTURE_TOKEN
+        assert session.get.call_count == 1
+
+    def test_fetch_uses_token_page_url_and_timeout(self):
+        provider, session = _provider(_page_response())
+        provider.get_token()
+        args, kwargs = session.get.call_args
+        assert args[0] == "https://dps.psx.com.pk/"
+        assert kwargs["timeout"] == 30
+
+    def test_refetches_after_ttl(self):
+        clock = FakeClock()
+        provider, session = _provider(
+            _page_response(),
+            _page_response(text=PAGE.replace(FIXTURE_TOKEN, OTHER_TOKEN)),
+            clock=clock,
+        )
+        assert provider.get_token() == FIXTURE_TOKEN
+        clock.now += TOKEN_TTL + 1
+        assert provider.get_token() == OTHER_TOKEN
+        assert session.get.call_count == 2
+
+    def test_token_refetched_exactly_at_ttl(self):
+        clock = FakeClock()
+        provider, session = _provider(_page_response(), _page_response(), clock=clock)
+        provider.get_token()
+        clock.now += TOKEN_TTL
+        provider.get_token()
+        assert session.get.call_count == 2
+
+    def test_token_cached_just_before_ttl(self):
+        clock = FakeClock()
+        provider, session = _provider(_page_response(), clock=clock)
+        provider.get_token()
+        clock.now += TOKEN_TTL - 0.001
+        provider.get_token()
+        assert session.get.call_count == 1
+
+    @pytest.mark.parametrize("status", [403, 503])
+    def test_non_200_page_returns_none_and_warns(self, status, caplog):
+        provider, _ = _provider(_page_response(status=status, text=""))
+        with caplog.at_level(logging.WARNING, logger="psxdata.scrapers.token"):
+            assert provider.get_token() is None
+        assert len([r for r in caplog.records if r.levelno == logging.WARNING]) == 1
+
+    def test_network_error_returns_none_and_warns(self, caplog):
+        provider, _ = _provider(requests.ConnectionError("down"))
+        with caplog.at_level(logging.WARNING, logger="psxdata.scrapers.token"):
+            assert provider.get_token() is None
+        assert any("X-Req-Id" in r.getMessage() for r in caplog.records)
+
+    def test_page_without_token_returns_none(self):
+        provider, _ = _provider(_page_response(text="<html></html>"))
+        assert provider.get_token() is None
+
+    def test_no_refetch_during_backoff_then_refetch_after(self):
+        clock = FakeClock()
+        provider, session = _provider(
+            _page_response(status=503, text=""), _page_response(), clock=clock
+        )
+        assert provider.get_token() is None
+        clock.now += TOKEN_RETRY_BACKOFF - 1
+        assert provider.get_token() is None
+        assert session.get.call_count == 1
+        clock.now += 2
+        assert provider.get_token() == FIXTURE_TOKEN
+        assert session.get.call_count == 2
+
+    def test_invalidate_matching_token_forces_refetch(self):
+        provider, session = _provider(_page_response(), _page_response())
+        tok = provider.get_token()
+        provider.invalidate(tok)
+        provider.get_token()
+        assert session.get.call_count == 2
+
+    def test_invalidate_stale_token_is_noop(self):
+        provider, session = _provider(_page_response())
+        provider.get_token()
+        provider.invalidate(OTHER_TOKEN)
+        provider.invalidate(None)
+        provider.get_token()
+        assert session.get.call_count == 1
+
+    def test_concurrent_callers_trigger_single_fetch(self):
+        session = MagicMock(spec=requests.Session)
+
+        def slow_get(*args, **kwargs):
+            time.sleep(0.05)
+            return _page_response()
+
+        session.get.side_effect = slow_get
+        provider = TokenProvider(session=session)
+        results: list[str | None] = []
+        threads = [
+            threading.Thread(target=lambda: results.append(provider.get_token()))
+            for _ in range(10)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert session.get.call_count == 1
+        assert results == [FIXTURE_TOKEN] * 10
+
+    def test_default_session_headers(self):
+        provider = TokenProvider()
+        headers = provider._session.headers
+        assert "X-Requested-With" not in headers
+        assert headers["User-Agent"] == REQUEST_HEADERS["User-Agent"]
+
+    def test_logs_never_contain_full_token(self, caplog):
+        provider, _ = _provider(_page_response())
+        with caplog.at_level(logging.DEBUG, logger="psxdata.scrapers.token"):
+            provider.get_token()
+        assert FIXTURE_TOKEN not in caplog.text
+
+
+class TestDefaultProvider:
+    def test_returns_same_instance(self, monkeypatch):
+        monkeypatch.setattr(token_module, "_default_provider", None)
+        first = get_default_provider()
+        assert first is get_default_provider()
+        assert type(first) is TokenProvider

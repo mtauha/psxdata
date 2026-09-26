@@ -62,6 +62,15 @@ MAX_WORKERS: int = 5
 DEFAULT_CHUNK_DAYS: int = 365
 
 # ---------------------------------------------------------------------------
+# Request token (X-Req-Id) - required on data endpoints since 2026-09-24 (#161)
+# PSX embeds it in every HTML page as window.__ps._k; its JS sends it on XHRs.
+# ---------------------------------------------------------------------------
+TOKEN_PAGE: str = "/"  # HTML page that embeds window.__ps
+TOKEN_HEADER: str = "X-Req-Id"
+TOKEN_TTL: int = 240  # seconds - proactive refresh age (observed rotation ~5 min)
+TOKEN_RETRY_BACKOFF: int = 60  # seconds before retrying after a failed token fetch
+
+# ---------------------------------------------------------------------------
 # Trading board structure
 # ---------------------------------------------------------------------------
 BOARDS: tuple[str, ...] = ("main", "gem", "bnb")

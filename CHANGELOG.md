@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - 2026-09-25
+
+### Fixed
+
+- All PSX data requests failing with `PSXAuthError` (403) since 2026-09-24. PSX now requires an `X-Req-Id` request token (published in every page as `window.__ps._k`) on its data endpoints. psxdata now fetches this token automatically, shares it across all scrapers in the process, refreshes it every 4 minutes, and on a 403 refreshes it and retries the request once before raising `PSXAuthError`. If no token can be obtained, requests are sent without it and a warning is logged. No API changes (#161).
+
+---
+
 ## [1.1.0] - 2026-09-02
 
 ### Added

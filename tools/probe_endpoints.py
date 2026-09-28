@@ -18,6 +18,9 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 
+from psxdata.constants import TOKEN_HEADER
+from psxdata.scrapers.token import TokenProvider, get_default_provider
+
 DOCS_DIR = Path(__file__).parent.parent / "docs"
 FIXTURES_DIR = Path(__file__).parent.parent / "tests" / "fixtures"
 BASELINE_PATH = FIXTURES_DIR / "endpoint_schema.json"
@@ -75,18 +78,37 @@ ENDPOINTS = [
 ]
 
 
-def probe_endpoint(ep: dict, session: requests.Session) -> dict:
-    """Probe one endpoint and return schema info."""
+def _send(ep: dict, session: requests.Session, token: str | None) -> requests.Response:
     url = f"{BASE_URL}{ep['url']}"
+    headers = {TOKEN_HEADER: token} if token else {}
+    if ep["method"] == "POST":
+        return session.post(url, data=ep["data"], headers=headers, timeout=30)
+    return session.get(url, headers=headers, timeout=30)
+
+
+def probe_endpoint(
+    ep: dict, session: requests.Session, token_provider: TokenProvider | None = None
+) -> dict:
+    """Probe one endpoint and return schema info.
+
+    Sends the PSX ``X-Req-Id`` token like the SDK does, refreshing it once on
+    403. A non-200 final response is reported as a probe error rather than
+    parsed, so an auth failure doesn't masquerade as every column being removed.
+    """
+    provider = token_provider or get_default_provider()
     t0 = time.monotonic()
     try:
-        if ep["method"] == "POST":
-            resp = session.post(url, data=ep["data"], timeout=30)
-        else:
-            resp = session.get(url, timeout=30)
+        token = provider.get_token()
+        resp = _send(ep, session, token)
+        if resp.status_code == 403 and token is not None:
+            provider.invalidate(token)
+            resp = _send(ep, session, provider.get_token())
         elapsed = round(time.monotonic() - t0, 2)
     except Exception as exc:
         return {"name": ep["name"], "error": str(exc)}
+
+    if resp.status_code != 200:
+        return {"name": ep["name"], "error": f"HTTP {resp.status_code}"}
 
     result = {
         "name": ep["name"],

@@ -140,3 +140,72 @@ class TestDiffSchemasEndpointPresence:
         live = [_result("ep_a", ["DATE"]), _result("ep_new", ["COL"])]
         diffs, _ = diff_schemas(live, base)
         assert not any("ep_new" in d for d in diffs)
+
+
+_TABLE_HTML = "<table><tr><th>A</th></tr><tr><td>1</td></tr></table>"
+
+
+class _FakeResp:
+    def __init__(self, status: int, text: str = _TABLE_HTML):
+        self.status_code = status
+        self.text = text
+        self.content = text.encode()
+        self.headers = {"Content-Type": "text/html"}
+
+
+class _FakeSession:
+    def __init__(self, statuses: list[int]):
+        self._statuses = list(statuses)
+        self.sent_headers: list[dict] = []
+
+    def get(self, url, headers=None, timeout=None):
+        self.sent_headers.append(headers or {})
+        return _FakeResp(self._statuses.pop(0))
+
+    post = None  # not used by the GET endpoint below
+
+
+class _FakeProvider:
+    def __init__(self, tokens: list[str | None]):
+        self._tokens = list(tokens)
+        self.invalidated: list[str | None] = []
+
+    def get_token(self):
+        return self._tokens[0]
+
+    def invalidate(self, token):
+        self.invalidated.append(token)
+        self._tokens.pop(0)
+
+
+_EP = {"name": "ep", "url": "/ep", "method": "GET", "data": None, "response_type": "html"}
+
+
+class TestProbeEndpointToken:
+    def test_sends_token_header(self):
+        session = _FakeSession([200])
+        result = _mod.probe_endpoint(_EP, session, _FakeProvider(["tok-aaaaaaaaaaaaaaaa"]))
+        assert session.sent_headers == [{"X-Req-Id": "tok-aaaaaaaaaaaaaaaa"}]
+        assert result["headers"] == ["A"]
+
+    def test_refreshes_token_once_on_403(self):
+        session = _FakeSession([403, 200])
+        provider = _FakeProvider(["old-aaaaaaaaaaaaaaaa", "new-aaaaaaaaaaaaaaaa"])
+        result = _mod.probe_endpoint(_EP, session, provider)
+        assert provider.invalidated == ["old-aaaaaaaaaaaaaaaa"]
+        assert session.sent_headers[1] == {"X-Req-Id": "new-aaaaaaaaaaaaaaaa"}
+        assert "error" not in result
+
+    def test_non_200_is_probe_error_not_column_drift(self):
+        session = _FakeSession([403, 403])
+        provider = _FakeProvider(["old-aaaaaaaaaaaaaaaa", "new-aaaaaaaaaaaaaaaa"])
+        result = _mod.probe_endpoint(_EP, session, provider)
+        assert result == {"name": "ep", "error": "HTTP 403"}
+        base = _baseline({"ep": _result("ep", ["A", "B"])})
+        diffs, _ = diff_schemas([result], base)
+        assert diffs == ["! ep: probe failed — HTTP 403"]
+
+    def test_no_token_sends_no_header(self):
+        session = _FakeSession([200])
+        _mod.probe_endpoint(_EP, session, _FakeProvider([None]))
+        assert session.sent_headers == [{}]

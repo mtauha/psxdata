@@ -33,6 +33,7 @@ from psxdata.exceptions import (
     PSXRateLimitError,
     PSXServerError,
 )
+from psxdata.proxy import ProxyConfig, describe_proxies, normalize_proxy, redact_text
 from psxdata.scrapers.token import TokenProvider, get_default_provider
 from psxdata.utils import RateLimiter
 
@@ -48,18 +49,38 @@ class BaseScraper:
     - Thread-safe rate limiter (MAX_REQUESTS_PER_SECOND)
     - PSX ``X-Req-Id`` request token on every request (process-wide TokenProvider),
       with one refresh-and-retry on 403
+    - Optional explicit proxy for every request, including the token fetch
 
+    Args:
+        token_provider: Token provider to use. ``None`` uses the process-wide
+            provider for this scraper's proxy configuration.
+        proxy: Proxy URL (``"http://user:pass@host:8080"``, ``"socks5://..."``)
+            applied to all traffic, or a ``requests``-style dict mapping scheme
+            to URL. Takes precedence over ``HTTP_PROXY``/``HTTPS_PROXY``. ``None``
+            (default) keeps plain ``requests`` behaviour, env vars included.
+
+    Raises:
+        ValueError, TypeError, ImportError: Invalid *proxy*; see
+            :func:`psxdata.proxy.normalize_proxy`.
     """
 
-    def __init__(self, token_provider: TokenProvider | None = None) -> None:
+    def __init__(
+        self,
+        token_provider: TokenProvider | None = None,
+        proxy: ProxyConfig = None,
+    ) -> None:
+        self._proxies = normalize_proxy(proxy)
         self._session = requests.Session()
         self._session.headers.update(REQUEST_HEADERS)
+        if self._proxies:
+            self._session.proxies.update(self._proxies)
+        self._via = f" via proxy {describe_proxies(self._proxies)}" if self._proxies else ""
         self._rate_limiter = RateLimiter(max_per_second=MAX_REQUESTS_PER_SECOND)
         # None -> process-wide default, looked up per request (see _get_token_provider)
         self._token_provider = token_provider
 
     def _get_token_provider(self) -> TokenProvider:
-        return self._token_provider or get_default_provider()
+        return self._token_provider or get_default_provider(self._proxies)
 
     def _build_url(self, endpoint: str) -> str:
         return BASE_URL + ENDPOINTS[endpoint]
@@ -92,6 +113,10 @@ class BaseScraper:
             PSXParseError: Other 4xx response (no retry).
         """
         caller_headers: dict[str, str] = dict(kwargs.pop("headers", None) or {})
+        if self._proxies:
+            # Per-request proxies take precedence over HTTP(S)_PROXY env vars;
+            # session.proxies alone would not (requests merges env settings over it).
+            kwargs.setdefault("proxies", self._proxies)
         provider = self._get_token_provider()
         auth_retry_used = False
         last_exc: Exception | None = None
@@ -103,7 +128,7 @@ class BaseScraper:
             try:
                 with self._rate_limiter:
                     logger.debug(
-                        "attempt %d/%d %s %s", attempt, MAX_RETRIES, method, url
+                        "attempt %d/%d %s %s%s", attempt, MAX_RETRIES, method, url, self._via
                     )
                     resp = self._session.request(
                         method, url, timeout=REQUEST_TIMEOUT, headers=headers, **kwargs
@@ -154,14 +179,18 @@ class BaseScraper:
                 # Catches ConnectionError, Timeout, SSLError, ChunkedEncodingError, etc.
                 last_exc = exc
                 logger.debug(
-                    "Network error on attempt %d/%d: %s", attempt, MAX_RETRIES, exc
+                    "Network error on attempt %d/%d%s: %s",
+                    attempt,
+                    MAX_RETRIES,
+                    self._via,
+                    redact_text(str(exc), self._proxies),
                 )
                 if attempt < MAX_RETRIES:
                     time.sleep(RETRY_DELAYS[attempt - 1])
                     attempt += 1
                     continue
                 raise PSXConnectionError(
-                    f"PSX unreachable after {MAX_RETRIES} attempts: {url}"
+                    f"PSX unreachable after {MAX_RETRIES} attempts{self._via}: {url}"
                 ) from exc
             except (PSXRateLimitError, PSXAuthError, PSXParseError):
                 raise  # no retry

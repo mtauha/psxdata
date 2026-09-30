@@ -1,8 +1,9 @@
 """Shared pytest fixtures.
 
 The autouse fixture below keeps unit and reliability tests offline: it replaces
-the process-wide PSX request-token provider with a stub. Integration tests
-(``-m integration``) are exempt so they exercise the real token flow.
+the process-wide PSX request-token providers (the no-proxy one and any created
+per proxy) with stubs. Integration tests (``-m integration``) are exempt so
+they exercise the real token flow.
 """
 import pytest
 
@@ -28,4 +29,6 @@ def _stub_default_token_provider(request, monkeypatch):
         yield
         return
     monkeypatch.setattr(token_module, "_default_provider", StubTokenProvider())
+    monkeypatch.setattr(token_module, "_proxy_providers", {})
+    monkeypatch.setattr(token_module, "_make_provider", lambda proxies: StubTokenProvider())
     yield

@@ -15,6 +15,7 @@ import pandas as pd
 
 from psxdata.cache.disk_cache import DiskCache
 from psxdata.constants import CACHE_DIR, CACHE_TTL_TODAY
+from psxdata.proxy import ProxyConfig, describe_proxies, normalize_proxy
 from psxdata.scrapers.debt_market import DebtMarketScraper
 from psxdata.scrapers.eligible_scrips import EligibleScripsScraper
 from psxdata.scrapers.fundamentals import FundamentalsScraper
@@ -41,23 +42,39 @@ class PSXClient:
     Args:
         cache_dir: Path to the cache directory. Tilde is expanded.
             Defaults to ``~/.psxdata/cache/``.
+        proxy: Route every PSX request - including the ``X-Req-Id`` token
+            fetch - through this proxy. Either one URL for all traffic
+            (``"http://user:pass@host:8080"``, ``"socks5://127.0.0.1:1080"``)
+            or a ``requests``-style dict such as
+            ``{"http": "http://p:8080", "https": "http://p:8443"}``. SOCKS needs
+            ``pip install 'psxdata[socks]'``. Takes precedence over the
+            ``HTTP_PROXY``/``HTTPS_PROXY`` env vars, which still apply when
+            ``proxy`` is ``None`` (default). Credentials are never logged.
+
+    Raises:
+        ValueError, TypeError, ImportError: Invalid ``proxy``.
 
     Example::
 
         client = PSXClient()
         df = client.stocks("ENGRO", start="2024-01-01")
+
+        proxied = PSXClient(proxy="http://user:pass@proxy.example.com:8080")
     """
 
-    def __init__(self, cache_dir: str = CACHE_DIR) -> None:
+    def __init__(self, cache_dir: str = CACHE_DIR, proxy: ProxyConfig = None) -> None:
+        proxies = normalize_proxy(proxy)
+        if proxies:
+            logger.debug("PSXClient routing requests via proxy %s", describe_proxies(proxies))
         self._cache = DiskCache(cache_dir)
-        self._historical = HistoricalScraper()
-        self._screener = ScreenerScraper()
-        self._symbols = SymbolsScraper()
-        self._indices = IndicesScraper()
-        self._sectors = SectorsScraper()
-        self._fundamentals = FundamentalsScraper()
-        self._debt_market = DebtMarketScraper()
-        self._eligible_scrips = EligibleScripsScraper()
+        self._historical = HistoricalScraper(proxy=proxies)
+        self._screener = ScreenerScraper(proxy=proxies)
+        self._symbols = SymbolsScraper(proxy=proxies)
+        self._indices = IndicesScraper(proxy=proxies)
+        self._sectors = SectorsScraper(proxy=proxies)
+        self._fundamentals = FundamentalsScraper(proxy=proxies)
+        self._debt_market = DebtMarketScraper(proxy=proxies)
+        self._eligible_scrips = EligibleScripsScraper(proxy=proxies)
 
     # ------------------------------------------------------------------
     # Public methods
@@ -477,6 +494,31 @@ def _client() -> PSXClient:
     if _default_client is None:
         _default_client = PSXClient()
     return _default_client
+
+
+def configure(*, proxy: ProxyConfig = None) -> None:
+    """Configure the default client used by the module-level functions.
+
+    Replaces the shared client, so it takes effect for every later
+    ``psxdata.stocks(...)``, ``psxdata.quote(...)`` etc. call. Calling it with
+    no arguments restores the defaults.
+
+    Args:
+        proxy: Proxy for every PSX request, including the token fetch. Same
+            forms as :class:`PSXClient`'s ``proxy`` argument.
+
+    Raises:
+        ValueError, TypeError, ImportError: Invalid ``proxy``. The current
+            default client is left unchanged.
+
+    Example::
+
+        import psxdata
+        psxdata.configure(proxy="socks5://127.0.0.1:1080")
+        df = psxdata.stocks("ENGRO")
+    """
+    global _default_client
+    _default_client = PSXClient(proxy=proxy)
 
 
 def stocks(

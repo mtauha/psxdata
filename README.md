@@ -28,7 +28,11 @@
 pip install psxdata
 ```
 
-Requires Python 3.11+.
+Requires Python 3.11+. For SOCKS proxy support, install the optional extra:
+
+```bash
+pip install "psxdata[socks]"
+```
 
 ---
 
@@ -75,6 +79,34 @@ scrips = psxdata.eligible_scrips()
 | `psxdata.fundamentals(symbol)`       | Financial reports for a ticker                   |
 | `psxdata.debt_market()`              | Debt market instruments (TFCs, Sukuks, etc.)     |
 | `psxdata.eligible_scrips()`          | Margin trading eligible stocks                   |
+| `psxdata.configure(proxy=...)`       | Set a proxy for the module-level functions       |
+
+---
+
+## Using a Proxy
+
+Route every request psxdata makes to PSX, including the `X-Req-Id` token fetch, through a proxy of your choice:
+
+```python
+import psxdata
+from psxdata import PSXClient
+
+# Per client: http://, https://, or socks5:// (with psxdata[socks]), credentials allowed
+client = PSXClient(proxy="http://user:pass@proxy.example.com:8080")
+df = client.stocks("ENGRO", start="2024-01-01")
+
+# Module-level functions
+psxdata.configure(proxy="socks5://127.0.0.1:1080")
+df = psxdata.stocks("ENGRO")
+
+# Separate proxies per scheme, same shape as requests' `proxies` dict
+client = PSXClient(proxy={"http": "http://p:8080", "https": "http://p:8443"})
+```
+
+- With no `proxy`, behaviour is unchanged and the standard `HTTP_PROXY` / `HTTPS_PROXY` environment variables still apply. An explicit `proxy` takes precedence over them.
+- Proxy credentials are never logged. To confirm the proxy is in use, enable debug logging (`logging.getLogger("psxdata").setLevel(logging.DEBUG)`): each request logs `via proxy http://***@host:port`.
+- If the proxy can't be reached, `PSXConnectionError` is raised and its message names the proxy, with credentials hidden.
+- Rate limiting and PSX request-token handling apply exactly as they do without a proxy.
 
 ---
 

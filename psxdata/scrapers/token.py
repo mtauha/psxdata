@@ -14,7 +14,7 @@ import logging
 import re
 import threading
 import time as _time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 import requests
 
@@ -29,6 +29,7 @@ from psxdata.constants import (
     TOKEN_RETRY_BACKOFF,
     TOKEN_TTL,
 )
+from psxdata.proxy import describe_proxies, redact_text
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +79,10 @@ class TokenProvider:
         time_func: Monotonic clock. Inject a fake for deterministic tests.
         sleep_func: Callable to sleep N seconds between retry attempts.
             Defaults to time.sleep. Inject a fake for deterministic tests.
+        proxies: Validated ``requests`` proxies dict (see
+            :func:`psxdata.proxy.normalize_proxy`). The token may be tied to the
+            client IP, so it must be fetched through the same proxy as the data
+            requests that will carry it. ``None`` means no explicit proxy.
     """
 
     def __init__(
@@ -85,12 +90,16 @@ class TokenProvider:
         session: requests.Session | None = None,
         time_func: Callable[[], float] = _time.monotonic,
         sleep_func: Callable[[float], None] = _time.sleep,
+        proxies: Mapping[str, str] | None = None,
     ) -> None:
         if session is None:
             session = requests.Session()
             session.headers.update(
                 {k: v for k, v in REQUEST_HEADERS.items() if k != "X-Requested-With"}
             )
+        self._proxies = dict(proxies) if proxies else None
+        if self._proxies:
+            session.proxies.update(self._proxies)
         self._session = session
         self._time = time_func
         self._sleep = sleep_func
@@ -149,9 +158,11 @@ class TokenProvider:
         attempt = 1
         while attempt <= MAX_RETRIES:
             try:
-                resp = self._session.get(url, timeout=REQUEST_TIMEOUT)
+                # Per-request proxies take precedence over HTTP(S)_PROXY env vars;
+                # session.proxies alone would not (requests merges env over it).
+                resp = self._session.get(url, timeout=REQUEST_TIMEOUT, proxies=self._proxies)
             except requests.RequestException as exc:
-                last_reason = f"request failed: {exc}"
+                last_reason = f"request failed: {redact_text(str(exc), self._proxies)}"
                 if attempt < MAX_RETRIES:
                     self._sleep(RETRY_DELAYS[attempt - 1])
                     attempt += 1
@@ -196,9 +207,11 @@ class TokenProvider:
         self._token = None
         self._fetched_at = None
         self._failed_at = self._time()
+        via = f" via proxy {describe_proxies(self._proxies)}" if self._proxies else ""
         logger.warning(
-            "Could not obtain PSX request token from %s (%s); sending requests without %s",
+            "Could not obtain PSX request token from %s%s (%s); sending requests without %s",
             url,
+            via,
             reason,
             TOKEN_HEADER,
         )
@@ -206,13 +219,29 @@ class TokenProvider:
 
 
 _default_provider: TokenProvider | None = None
+_proxy_providers: dict[frozenset[tuple[str, str]], TokenProvider] = {}
 _default_lock = threading.Lock()
 
 
-def get_default_provider() -> TokenProvider:
-    """Return the process-wide TokenProvider shared by all scrapers (created lazily)."""
+def _make_provider(proxies: Mapping[str, str]) -> TokenProvider:
+    return TokenProvider(proxies=proxies)
+
+
+def get_default_provider(proxies: Mapping[str, str] | None = None) -> TokenProvider:
+    """Return the process-wide TokenProvider for *proxies* (created lazily).
+
+    Scrapers without a proxy share one provider. Scrapers with the same proxy
+    configuration share another, whose token fetch goes through that proxy, so
+    the token and the data requests always come from the same egress IP.
+    """
     global _default_provider
     with _default_lock:
-        if _default_provider is None:
-            _default_provider = TokenProvider()
-        return _default_provider
+        if not proxies:
+            if _default_provider is None:
+                _default_provider = TokenProvider()
+            return _default_provider
+        key = frozenset(proxies.items())
+        provider = _proxy_providers.get(key)
+        if provider is None:
+            provider = _proxy_providers[key] = _make_provider(proxies)
+        return provider

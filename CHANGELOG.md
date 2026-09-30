@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-09-30
+
+### Added
+
+- Proxy support (#162). `PSXClient(proxy=...)` and the new `psxdata.configure(proxy=...)` (for the module-level functions) route every PSX request through a proxy you choose, including the `X-Req-Id` token fetch, so the token and the data requests come from the same egress IP. Accepts a single URL (`http://`, `https://`, `socks5://`, optionally with `user:pass@`) or a `requests`-style per-scheme dict. An explicit proxy takes precedence over `HTTP_PROXY`/`HTTPS_PROXY`. Without one, behaviour is unchanged and those environment variables still apply. Proxy credentials are redacted from all log lines and error messages. A proxy connection failure raises `PSXConnectionError` naming the (redacted) proxy. `BaseScraper` and `TokenProvider` gain an optional `proxy`/`proxies` argument.
+- `psxdata[socks]` optional extra (`requests[socks]`) for SOCKS proxies. Passing a SOCKS URL without it raises an `ImportError` explaining how to install it.
+
+---
+
 ## [1.1.1] - 2026-09-25
 
 ### Fixed

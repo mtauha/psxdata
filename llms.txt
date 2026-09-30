@@ -34,6 +34,7 @@ Requires Python 3.11+
 - `psxdata.fundamentals(symbol)` — Financial reports (P/E, EPS, book value)
 - `psxdata.debt_market()` — Debt instruments: TFCs, Sukuks, and other categories
 - `psxdata.eligible_scrips()` — Margin trading eligible stocks by category
+- `psxdata.configure(proxy=...)` / `PSXClient(proxy=...)` — Route all PSX requests (including the request-token fetch) through an HTTP(S) or SOCKS proxy (`pip install "psxdata[socks]"` for SOCKS)
 
 ## Key Design Decisions
 
